@@ -8,10 +8,10 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = () => {
-    console.log("Tentativa de Login:", { email, password });
-  };
-
+const handleLogin = () => {
+  console.log("Tentativa de Login:", { email, password });
+  navigation.replace("Main", { screen: "Inicio" });
+};
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Bem-vindo(a) ao PetConnect!</Text>
