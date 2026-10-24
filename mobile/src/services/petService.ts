@@ -21,6 +21,8 @@ export type PetResumo = {
   foto: string | null;
 };
 
+const USAR_MOCK = true;
+
 export function formatarIdade(meses: number | null): string {
   if (meses == null) return "—";
   if (meses < 12) return `${meses} ${meses === 1 ? "mês" : "meses"}`;
@@ -34,6 +36,18 @@ async function usuarioLogado() {
 }
 
 export async function listarPets(): Promise<PetResumo[]> {
+  if (USAR_MOCK) {
+    return [
+      {
+        id: "teste-1",
+        nome: "Toddy Henrique",
+        especie: "Gato",
+        idade: "3 anos",
+        foto: null,
+      },
+    ];
+  }
+
   const { data, error } = await supabase
     .from("pets")
     .select("id, nome, especie, idade_meses, foto_url")
@@ -51,6 +65,21 @@ export async function listarPets(): Promise<PetResumo[]> {
 }
 
 export async function buscarPet(id: string): Promise<Pet> {
+  if (USAR_MOCK) {
+    return {
+      id,
+      nome: "Toddy Henrique",
+      especie: "Gato",
+      idade: "3 anos",
+      porte: "Pequeno",
+      sexo: "—",
+      sobre: "Gato muito carinhoso.",
+      foto: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800",
+      responsavel: "Amigos Felizes",
+      responsavelTipo: "Abrigo / ONG",
+    };
+  }
+
   const { data, error } = await supabase
     .from("pets")
     .select(
@@ -80,6 +109,8 @@ export async function buscarPet(id: string): Promise<Pet> {
 }
 
 export async function jaSolicitou(petId: string): Promise<boolean> {
+  if (USAR_MOCK) return false;
+
   const user = await usuarioLogado();
   if (!user) return false;
 
@@ -95,6 +126,8 @@ export async function jaSolicitou(petId: string): Promise<boolean> {
 }
 
 export async function solicitarAdocao(petId: string): Promise<void> {
+  if (USAR_MOCK) return;
+
   const user = await usuarioLogado();
   if (!user) throw new Error("Faça login para solicitar a adoção.");
 
@@ -106,6 +139,8 @@ export async function solicitarAdocao(petId: string): Promise<void> {
 }
 
 export async function cancelarSolicitacao(petId: string): Promise<void> {
+  if (USAR_MOCK) return;
+
   const user = await usuarioLogado();
   if (!user) throw new Error("Faça login para continuar.");
 
