@@ -1,125 +1,173 @@
-          />
-          <Campo
-            label="SENHA"
-            placeholder="Mínimo 6 caracteres"
-            icon="🔒"
-            value={senha}
-            onChangeText={setSenha}
-            secureTextEntry
-          />
+import React, { useState } from "react";
+import {
+  Text,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 
-          <Text style={styles.sectionTitle}>ENDEREÇO</Text>
-          <View style={styles.twoColumns}>
-            <View style={styles.column}>
-              <Campo
-                label="CEP"
-                placeholder="00000-000"
-                icon="⌖"
-                value={cep}
-                onChangeText={setCep}
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.column}>
-              <Campo
-                label="ESTADO"
-                placeholder="UF"
-                icon="▣"
-                value={estado}
-                onChangeText={setEstado}
-              />
-            </View>
-          </View>
-          <Campo
-            label="CIDADE"
-            placeholder="Sua cidade"
-            icon="▦"
-            value={cidade}
-            onChangeText={setCidade}
-          />
-          <Campo
-            label="ENDEREÇO"
-            placeholder="Rua, número, bairro"
-            icon="⌂"
-            value={endereco}
-            onChangeText={setEndereco}
-          />
+type Erros = Partial<Record<
+  "nome" | "cnpj" | "email" | "senha" | "cep" | "estado" | "cidade" | "endereco",
+  string
+>>;
 
-          <TouchableOpacity
-            style={[styles.submitButton, carregando && styles.disabledButton]}
-            onPress={handleCadastro}
-            disabled={carregando}
-            activeOpacity={0.85}
-          >
-            {carregando ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.submitText}>CADASTRAR ONG</Text>
-            )}
-          </TouchableOpacity>
+const somenteDigitos = (valor: string) => valor.replace(/\D/g, "");
 
-          <TouchableOpacity onPress={onLogin} style={styles.loginLink}>
-            <Text style={styles.loginText}>
-              Já possui uma conta? <Text style={styles.loginHighlight}>Faça login</Text>
-            </Text>
-          </TouchableOpacity>
-        </View>
+export function TelaCadastroOng() {
+  const [nome, setNome] = useState("");
+  const [cnpj, setCnpj] = useState("");
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [cep, setCep] = useState("");
+  const [estado, setEstado] = useState("");
+  const [cidade, setCidade] = useState("");
+  const [endereco, setEndereco] = useState("");
+  const [erros, setErros] = useState<Erros>({});
+
+  function validar(): boolean {
+    const novosErros: Erros = {};
+
+    if (!nome.trim()) novosErros.nome = "Informe o nome da ONG.";
+    if (cnpj.length !== 14) novosErros.cnpj = "O CNPJ deve ter 14 dígitos.";
+    if (!/^\S+@\S+\.\S+$/.test(email)) novosErros.email = "E-mail inválido.";
+    if (senha.length < 6) novosErros.senha = "A senha deve ter ao menos 6 caracteres.";
+    if (cep.length !== 8) novosErros.cep = "O CEP deve ter 8 dígitos.";
+    if (estado.length !== 2) novosErros.estado = "Use a sigla do estado (ex: SP).";
+    if (!cidade.trim()) novosErros.cidade = "Informe a cidade.";
+    if (!endereco.trim()) novosErros.endereco = "Informe o endereço.";
+
+    setErros(novosErros);
+    return Object.keys(novosErros).length === 0;
+  }
+
+  function handleCadastrarOng() {
+    if (!validar()) {
+      Alert.alert("Atenção", "Corrija os campos destacados.");
+      return;
+    }
+
+    Alert.alert("Sucesso", "ONG cadastrada com sucesso!");
+  }
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.title}>Cadastro de ONG</Text>
+        <Text style={styles.subtitle}>Preencha os dados da sua organização</Text>
+
+        <Input
+          label="Nome da ONG"
+          placeholder="Ex: Amigos do Bem"
+          value={nome}
+          onChangeText={setNome}
+          errorMessage={erros.nome}
+        />
+        <Input
+          label="CNPJ"
+          placeholder="Somente números"
+          keyboardType="numeric"
+          maxLength={14}
+          value={cnpj}
+          onChangeText={(t) => setCnpj(somenteDigitos(t))}
+          errorMessage={erros.cnpj}
+        />
+        <Input
+          label="E-mail"
+          placeholder="contato@ong.org"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          value={email}
+          onChangeText={setEmail}
+          errorMessage={erros.email}
+        />
+        <Input
+          label="Senha"
+          placeholder="Mínimo 6 caracteres"
+          secureTextEntry
+          value={senha}
+          onChangeText={setSenha}
+          errorMessage={erros.senha}
+        />
+
+        <Text style={styles.section}>Endereço</Text>
+
+        <Input
+          label="CEP"
+          placeholder="Somente números"
+          keyboardType="numeric"
+          maxLength={8}
+          value={cep}
+          onChangeText={(t) => setCep(somenteDigitos(t))}
+          errorMessage={erros.cep}
+        />
+        <Input
+          label="Estado"
+          placeholder="UF"
+          autoCapitalize="characters"
+          maxLength={2}
+          value={estado}
+          onChangeText={setEstado}
+          errorMessage={erros.estado}
+        />
+        <Input
+          label="Cidade"
+          placeholder="Cidade"
+          value={cidade}
+          onChangeText={setCidade}
+          errorMessage={erros.cidade}
+        />
+        <Input
+          label="Endereço"
+          placeholder="Rua, número e bairro"
+          value={endereco}
+          onChangeText={setEndereco}
+          errorMessage={erros.endereco}
+        />
+
+        <Button title="Cadastrar ONG" variant="primary" onPress={handleCadastrarOng} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-const GREEN = "#348F43";
-
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#FFFFFF" },
-  scrollContent: { flexGrow: 1, paddingBottom: 32 },
-  header: {
-    backgroundColor: GREEN,
-    minHeight: 248,
-    paddingHorizontal: 28,
-    paddingTop: 42,
-    paddingBottom: 28,
-    borderBottomLeftRadius: 2,
-    borderBottomRightRadius: 2,
+  flex: {
+    flex: 1,
+    backgroundColor: "#F9F9F9",
   },
-  backButton: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: "rgba(255,255,255,0.18)",
-    alignItems: "center", justifyContent: "center",
+  container: {
+    padding: 24,
+    flexGrow: 1,
+    justifyContent: "center",
   },
-  backText: { color: "#FFFFFF", fontSize: 38, lineHeight: 40, marginTop: -5 },
-  logoCircle: {
-    marginTop: 14, width: 54, height: 54, borderRadius: 27,
-    backgroundColor: "rgba(255,255,255,0.18)",
-    alignItems: "center", justifyContent: "center",
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+    textAlign: "center",
   },
-  logo: { fontSize: 25 },
-  title: { color: "#FFFFFF", fontSize: 24, fontWeight: "500", marginTop: 14 },
-  subtitle: { color: "#DCEFE0", fontSize: 14, marginTop: 5 },
-  form: { paddingHorizontal: 24, paddingTop: 28 },
-  sectionTitle: {
-    color: "#6F9476", fontSize: 13, letterSpacing: 0.5,
-    marginTop: 2, marginBottom: 18,
-    borderBottomWidth: 1, borderBottomColor: "#E8EEE9", paddingBottom: 7,
+  subtitle: {
+    fontSize: 14,
+    color: "#666",
+    textAlign: "center",
+    marginTop: 4,
+    marginBottom: 24,
   },
-  fieldGroup: { marginBottom: 16, flex: 1 },
-  label: { color: "#242824", fontSize: 13, marginBottom: 8, fontWeight: "500" },
-  inputContainer: {
-    minHeight: 49, backgroundColor: "#F3F8F4", borderRadius: 7,
-    flexDirection: "row", alignItems: "center", paddingHorizontal: 14,
+  section: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+    marginTop: 8,
+    marginBottom: 12,
   },
-  inputIcon: { width: 28, color: "#8B9890", fontSize: 18 },
-  input: { flex: 1, color: "#28332B", fontSize: 15, paddingVertical: 12 },
-  twoColumns: { flexDirection: "row", gap: 14 },
-  column: { flex: 1 },
-  submitButton: {
-    backgroundColor: GREEN, minHeight: 52, borderRadius: 8,
-    alignItems: "center", justifyContent: "center", marginTop: 12,
-  },
-  disabledButton: { opacity: 0.65 },
-  submitText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700", letterSpacing: 0.5 },
-  loginLink: { alignItems: "center", paddingVertical: 20 },
-  loginText: { color: "#777F79", fontSize: 14 },
-  loginHighlight: { color: GREEN, fontWeight: "700" },
 });

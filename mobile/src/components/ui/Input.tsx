@@ -1,27 +1,48 @@
-import { TextInput, StyleSheet, TextInputProps } from "react-native";
+import { View, Text, TextInput, StyleSheet, TextInputProps } from "react-native";
 
 interface InputProps extends TextInputProps {
-  // Espaço reservado para props customizadas futuras (ex: errorMessage, label)
+  label?: string;
+  errorMessage?: string;
 }
 
-export function Input({ style, ...rest }: InputProps) {
+export function Input({ label, errorMessage, style, ...rest }: InputProps) {
   return (
-    <TextInput
-      style={[styles.input, style]}
-      placeholderTextColor="#888"
-      {...rest}
-    />
+    <View style={styles.wrapper}>
+      {!!label && <Text style={styles.label}>{label}</Text>}
+      <TextInput
+        style={[styles.input, !!errorMessage && styles.inputError, style]}
+        placeholderTextColor="#888"
+        {...rest}
+      />
+      {!!errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrapper: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 6,
+  },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 8,
     padding: 12,
-    marginBottom: 16,
     fontSize: 16,
     backgroundColor: "#fff",
+  },
+  inputError: {
+    borderColor: "#D32F2F",
+  },
+  error: {
+    fontSize: 12,
+    color: "#D32F2F",
+    marginTop: 4,
   },
 });
