@@ -8,17 +8,19 @@ import {
   Platform,
   Alert,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { HeaderLogin } from "@/components/ui/HeaderLogin";
 import { InputGroup } from "@/components/ui/InputGroup";
 import { Button } from "@/components/ui/Button";
 import { OrDivider } from "@/components/ui/OrDivider";
-import { loginUser } from "@/services/auth";
+import { loginUser, loginWithGoogle } from "@/services/auth";
 import type { LoginScreenProps } from "@/types/navigation";
 
 export function LoginScreen({ navigation }: LoginScreenProps) {
   const [document, setDocument] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const [documentError, setDocumentError] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -70,6 +72,19 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    try {
+      const response = await loginWithGoogle();
+      Alert.alert("Sucesso", `Bem-vindo(a) via Google, ${response.user.name}!`);
+      navigation.navigate("HomeUsuario");
+    } catch (error: any) {
+      Alert.alert("Erro no Google Login", error.message || "Não foi possível autenticar com o Google.");
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -86,6 +101,17 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
           />
 
           <View style={styles.formContainer}>
+            <Button
+              title={googleLoading ? "Conectando..." : "Continuar com o Google"}
+              variant="google"
+              icon={<Ionicons name="logo-google" size={20} color="#DB4437" />}
+              onPress={handleGoogleLogin}
+              disabled={googleLoading}
+              style={styles.googleButton}
+            />
+
+            <OrDivider text="ou" />
+
             <InputGroup
               label="CPF ou CNPJ"
               placeholder="Digite seu CPF ou CNPJ"
@@ -107,7 +133,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
             />
 
             <Button
-              title={loading ? "Entrando..." : "Entrar"}
+              title={loading ? "Entrando..." : "Entrar com CPF/CNPJ"}
               variant="primary"
               onPress={handleLogin}
               disabled={loading}
@@ -149,7 +175,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: "100%",
-    maxWidth: 440,
+    maxWidth: 480,
     alignSelf: "center",
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
@@ -164,6 +190,9 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     width: "100%",
+  },
+  googleButton: {
+    marginBottom: 4,
   },
   loginButton: {
     marginTop: 8,
