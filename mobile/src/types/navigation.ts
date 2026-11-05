@@ -1,6 +1,7 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 export type RootStackParamList = {
+  Login: undefined;
   EscolhaCadastro: undefined;
   CadastroUsuario: undefined;
   CadastroOng: undefined;
@@ -9,6 +10,11 @@ export type RootStackParamList = {
   SolicitacoesUsuario: undefined;
   SolicitacoesOngs: undefined;
 };
+
+export type LoginScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  "Login"
+>;
 
 export type EscolhaCadastroProps = NativeStackScreenProps<
   RootStackParamList,
