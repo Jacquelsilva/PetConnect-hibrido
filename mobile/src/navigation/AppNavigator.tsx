@@ -1,10 +1,14 @@
+
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-
 import { TelaEscolhaCadastro } from "@/screens/TelaEscolhaCadastro";
 import { TelaCadastroUsuario } from "@/screens/TelaCadastroUsuario";
 import { TelaCadastroOng } from "@/screens/TelaCadastroOng";
-// import { TelaCadastroAnimal } from "@/screens/TelaCadastroAnimal";
+import { TelaSolicitacoesOngs } from "@/screens/TelaSolicitacoesOngs";
+import { TelaSolicitacoesUsuario } from "@/screens/TelaSolicitacoesUsuario";
+import { TelaHomeUsuario } from "@/screens/TelaHomeUsuario";
+import { TelaHomeOngs } from "@/screens/TelaHomeOngs";
+
 
 import type { RootStackParamList } from "@/types/navigation";
 
@@ -17,10 +21,44 @@ export function AppNavigator() {
         initialRouteName="EscolhaCadastro"
         screenOptions={{ headerShown: false }}
       >
-        <Stack.Screen name="EscolhaCadastro" component={TelaEscolhaCadastro} />
-        <Stack.Screen name="CadastroUsuario" component={TelaCadastroUsuario} />
-        <Stack.Screen name="CadastroOng" component={TelaCadastroOng} />
-        {/* <Stack.Screen name="CadastroAnimal" component={TelaCadastroAnimal} /> */}
+        {/* Cadastro */}
+        <Stack.Screen
+          name="EscolhaCadastro"
+          component={TelaEscolhaCadastro}
+        />
+
+        <Stack.Screen
+          name="CadastroUsuario"
+          component={TelaCadastroUsuario}
+        />
+
+        <Stack.Screen
+          name="CadastroOng"
+          component={TelaCadastroOng}
+        />
+
+        {/* Home */}
+        <Stack.Screen
+          name="HomeUsuario"
+          component={TelaHomeUsuario}
+        />
+
+        <Stack.Screen
+          name="HomeOngs"
+          component={TelaHomeOngs}
+        />
+
+        {/* Solicitações */}
+        <Stack.Screen
+          name="SolicitacoesUsuario"
+          component={TelaSolicitacoesUsuario}
+        />
+
+        <Stack.Screen
+          name="SolicitacoesOngs"
+          component={TelaSolicitacoesOngs}
+        />
+
       </Stack.Navigator>
     </NavigationContainer>
   );

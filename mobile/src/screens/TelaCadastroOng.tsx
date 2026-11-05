@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   Text,
@@ -7,17 +8,21 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import type { CadastroOngProps } from "@/types/navigation";
 
-type Erros = Partial<Record<
-  "nome" | "cnpj" | "email" | "senha" | "cep" | "estado" | "cidade" | "endereco",
-  string
->>;
+type Erros = Partial<
+  Record<
+    "nome" | "cnpj" | "email" | "senha" | "cep" | "estado" | "cidade" | "endereco",
+    string
+  >
+>;
 
 const somenteDigitos = (valor: string) => valor.replace(/\D/g, "");
 
-export function TelaCadastroOng() {
+export function TelaCadastroOng({ navigation }: CadastroOngProps) {
   const [nome, setNome] = useState("");
   const [cnpj, setCnpj] = useState("");
   const [email, setEmail] = useState("");
@@ -50,7 +55,16 @@ export function TelaCadastroOng() {
       return;
     }
 
-    Alert.alert("Sucesso", "ONG cadastrada com sucesso!");
+    Alert.alert(
+      "Sucesso",
+      "ONG cadastrada com sucesso!",
+      [
+        {
+          text: "Continuar",
+          onPress: () => navigation.replace("HomeOngs"),
+        },
+      ]
+    );
   }
 
   return (
@@ -63,7 +77,9 @@ export function TelaCadastroOng() {
         keyboardShouldPersistTaps="handled"
       >
         <Text style={styles.title}>Cadastro de ONG</Text>
-        <Text style={styles.subtitle}>Preencha os dados da sua organização</Text>
+        <Text style={styles.subtitle}>
+          Preencha os dados da sua organização
+        </Text>
 
         <Input
           label="Nome da ONG"
@@ -72,6 +88,7 @@ export function TelaCadastroOng() {
           onChangeText={setNome}
           errorMessage={erros.nome}
         />
+
         <Input
           label="CNPJ"
           placeholder="Somente números"
@@ -81,6 +98,7 @@ export function TelaCadastroOng() {
           onChangeText={(t) => setCnpj(somenteDigitos(t))}
           errorMessage={erros.cnpj}
         />
+
         <Input
           label="E-mail"
           placeholder="contato@ong.org"
@@ -90,6 +108,7 @@ export function TelaCadastroOng() {
           onChangeText={setEmail}
           errorMessage={erros.email}
         />
+
         <Input
           label="Senha"
           placeholder="Mínimo 6 caracteres"
@@ -110,6 +129,7 @@ export function TelaCadastroOng() {
           onChangeText={(t) => setCep(somenteDigitos(t))}
           errorMessage={erros.cep}
         />
+
         <Input
           label="Estado"
           placeholder="UF"
@@ -119,6 +139,7 @@ export function TelaCadastroOng() {
           onChangeText={setEstado}
           errorMessage={erros.estado}
         />
+
         <Input
           label="Cidade"
           placeholder="Cidade"
@@ -126,6 +147,7 @@ export function TelaCadastroOng() {
           onChangeText={setCidade}
           errorMessage={erros.cidade}
         />
+
         <Input
           label="Endereço"
           placeholder="Rua, número e bairro"
@@ -134,7 +156,14 @@ export function TelaCadastroOng() {
           errorMessage={erros.endereco}
         />
 
-        <Button title="Cadastrar ONG" variant="primary" onPress={handleCadastrarOng} />
+        <Button
+          title="Cadastrar ONG"
+          variant="primary"
+          onPress={() => {
+            handleCadastrarOng();
+            navigation.replace("HomeOngs");
+          }}
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );
