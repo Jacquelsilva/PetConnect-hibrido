@@ -2,8 +2,8 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { TelaEscolhaCadastro } from "@/screens/TelaEscolhaCadastro";
-import { TelaCadastroUsuario } from "@/screens/TelaCadastroUsuario";
-import { TelaCadastroOng } from "@/screens/TelaCadastroOng";
+import TelaCadastroUsuario from "@/screens/TelaCadastroUsuario";
+import TelaCadastroOng from "@/screens/TelaCadastroOng";
 import { TelaSolicitacoesOngs } from "@/screens/TelaSolicitacoesOngs";
 import { TelaSolicitacoesUsuario } from "@/screens/TelaSolicitacoesUsuario";
 import { TelaHomeUsuario } from "@/screens/TelaHomeUsuario";

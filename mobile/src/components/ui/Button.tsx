@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   Pressable,
@@ -23,39 +24,43 @@ export function Button({
   variant = "primary",
   style,
   disabled,
+  onPress,
   ...rest
 }: ButtonProps) {
   return (
     <Pressable
+      {...rest}
       disabled={disabled}
+      onPress={(event) => {
+        console.log("BUTTON CLICADO!");
+        onPress?.(event);
+      }}
       style={({ pressed }) => [
         styles.base,
         buttonVariants[variant],
         pressed && !disabled && buttonPressedVariants[variant],
         disabled && styles.disabled,
-        typeof style === "function" ? style({ pressed }) : style,
+        typeof style === "function"
+          ? style({ pressed })
+          : style,
       ]}
-      {...rest}
     >
-      {({ pressed }) => {
-        // Se a prop 'title' for informada, renderiza o Text padrão
-        if (title) {
-          return (
-            <Text
-              style={[
-                styles.textBase,
-                textVariants[variant],
-                pressed && !disabled && textPressedVariants[variant],
-              ]}
-            >
-              {title}
-            </Text>
-          );
-        }
-
-        // Caso contrário, renderiza os filhos passados na tag
-        return children;
-      }}
+      {({ pressed }) => (
+        title ? (
+          <Text
+            style={[
+              styles.textBase,
+              textVariants[variant],
+              pressed && !disabled &&
+                textPressedVariants[variant],
+            ]}
+          >
+            {title}
+          </Text>
+        ) : (
+          children
+        )
+      )}
     </Pressable>
   );
 }
@@ -77,10 +82,7 @@ const styles = StyleSheet.create({
   },
 });
 
-const buttonVariants: Record<
-  ButtonVariant,
-  StyleProp<ViewStyle>
-> = StyleSheet.create({
+const buttonVariants: Record<ButtonVariant, StyleProp<ViewStyle>> = {
   primary: {
     backgroundColor: "#4CAF50",
   },
@@ -92,12 +94,9 @@ const buttonVariants: Record<
     borderWidth: 1.5,
     borderColor: "#4CAF50",
   },
-});
+};
 
-const buttonPressedVariants: Record<
-  ButtonVariant,
-  StyleProp<ViewStyle>
-> = StyleSheet.create({
+const buttonPressedVariants: Record<ButtonVariant, StyleProp<ViewStyle>> = {
   primary: {
     backgroundColor: "#388E3C",
   },
@@ -107,34 +106,16 @@ const buttonPressedVariants: Record<
   outline: {
     backgroundColor: "rgba(76, 175, 80, 0.1)",
   },
-});
+};
 
-const textVariants: Record<
-  ButtonVariant,
-  StyleProp<TextStyle>
-> = StyleSheet.create({
-  primary: {
-    color: "#FFFFFF",
-  },
-  secondary: {
-    color: "#FFFFFF",
-  },
-  outline: {
-    color: "#4CAF50",
-  },
-});
+const textVariants: Record<ButtonVariant, StyleProp<TextStyle>> = {
+  primary: { color: "#FFFFFF" },
+  secondary: { color: "#FFFFFF" },
+  outline: { color: "#4CAF50" },
+};
 
-const textPressedVariants: Record<
-  ButtonVariant,
-  StyleProp<TextStyle>
-> = StyleSheet.create({
-  primary: {
-    color: "#F0F0F0",
-  },
-  secondary: {
-    color: "#F0F0F0",
-  },
-  outline: {
-    color: "#388E3C",
-  },
-});
+const textPressedVariants: Record<ButtonVariant, StyleProp<TextStyle>> = {
+  primary: { color: "#F0F0F0" },
+  secondary: { color: "#F0F0F0" },
+  outline: { color: "#388E3C" },
+};

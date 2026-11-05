@@ -1,57 +1,104 @@
+
 import React from "react";
-import { Text, View, StyleSheet, StatusBar } from "react-native";
+
+import {
+  Text,
+  View,
+  StyleSheet,
+  StatusBar,
+  TouchableOpacity,
+} from "react-native";
+
 import { Ionicons } from "@expo/vector-icons";
+
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+
 import { OptionCard } from "@/components/ui/OptionCard";
 import type { RootStackParamList } from "@/types/navigation";
 
-type Props = NativeStackScreenProps<RootStackParamList, "EscolhaCadastro">;
+type Props = NativeStackScreenProps<
+  RootStackParamList,
+  "EscolhaCadastro"
+>;
 
 export function TelaEscolhaCadastro({ navigation }: Props) {
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F766E" />
 
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="#0F766E"
+      />
+
+      {/* Cabeçalho */}
       <View style={styles.hero}>
+
         <View style={styles.logo}>
-          <Ionicons name="paw" size={36} color="#0F766E" />
+          <Ionicons
+            name="paw"
+            size={36}
+            color="#0F766E"
+          />
         </View>
-        <Text style={styles.heroTitulo}>Bem-vindo!</Text>
-        <Text style={styles.heroSubtitulo}>
-          Escolha como você quer participar para criar a sua conta.
+
+        <Text style={styles.heroTitulo}>
+          Bem-vindo!
         </Text>
+
+        <Text style={styles.heroSubtitulo}>
+          Conectando animais que precisam de um lar
+          com pessoas dispostas a amar.
+        </Text>
+
       </View>
 
+      {/* Conteúdo */}
       <View style={styles.conteudo}>
-        <Text style={styles.pergunta}>Como você quer se cadastrar?</Text>
 
+        <Text style={styles.pergunta}>
+          Como você quer participar?
+        </Text>
+
+        {/* Cadastro de usuário */}
         <OptionCard
           icone="person"
           titulo="Sou usuário"
           descricao="Quero encontrar ONGs e animais perto de mim."
           cor="#0F766E"
           corFundo="#CCFBF1"
-          onPress={() => navigation.navigate("CadastroUsuario")}
+          onPress={() =>
+            navigation.navigate("CadastroUsuario")
+          }
         />
 
+        {/* Cadastro de ONG */}
         <OptionCard
           icone="heart"
           titulo="Sou uma ONG"
           descricao="Represento uma organização e quero divulgar o meu trabalho."
-          cor="#B45309"
-          corFundo="#FEF3C7"
-          onPress={() => navigation.navigate("CadastroOng")}
+          cor="#0F766E"
+          corFundo="#CCFBF1"
+          onPress={() =>
+            navigation.navigate("CadastroOng")
+          }
         />
+
+        
+        
+
       </View>
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+
   container: {
     flex: 1,
-    backgroundColor: "#F9F9F9",
+    backgroundColor: "#F9FAFB",
   },
+
   hero: {
     backgroundColor: "#0F766E",
     paddingTop: 72,
@@ -61,21 +108,24 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
   },
+
   logo: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
   },
+
   heroTitulo: {
     fontSize: 28,
     fontWeight: "bold",
-    color: "#fff",
+    color: "#FFFFFF",
     textAlign: "center",
   },
+
   heroSubtitulo: {
     fontSize: 15,
     lineHeight: 22,
@@ -84,11 +134,13 @@ const styles = StyleSheet.create({
     marginTop: 8,
     maxWidth: 300,
   },
+
   conteudo: {
     flex: 1,
     padding: 24,
     marginTop: -24,
   },
+
   pergunta: {
     fontSize: 18,
     fontWeight: "bold",
@@ -96,4 +148,24 @@ const styles = StyleSheet.create({
     marginTop: 40,
     marginBottom: 16,
   },
+
+  loginContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 28,
+    gap: 5,
+  },
+
+  loginTexto: {
+    color: "#6B7280",
+    fontSize: 14,
+  },
+
+  loginLink: {
+    color: "#0F766E",
+    fontSize: 15,
+    fontWeight: "bold",
+  },
+
 });
