@@ -1,10 +1,11 @@
 import React from "react";
 import { View, Text, TextInput, StyleSheet, TextInputProps } from "react-native";
+import { applyMask } from "@/utils/masks";
 
 interface InputGroupProps extends TextInputProps {
   label: string;
   errorMessage?: string;
-  mask?: "cpf_cnpj" | "none";
+  mask?: "cpf" | "cnpj" | "phone" | "cep" | "cpf_cnpj" | "none";
 }
 
 export function InputGroup({
@@ -17,28 +18,9 @@ export function InputGroup({
   ...rest
 }: InputGroupProps) {
   const handleTextChange = (text: string) => {
-    if (mask === "cpf_cnpj") {
-      // Remove non-digits
-      const digits = text.replace(/\D/g, "");
-      let formatted = digits;
-
-      if (digits.length <= 11) {
-        // CPF: 000.000.000-00
-        formatted = digits
-          .replace(/(\d{3})(\d)/, "$1.$2")
-          .replace(/(\d{3})(\d)/, "$1.$2")
-          .replace(/(\d{3})(\d{1,2})/, "$1-$2")
-          .replace(/(-\d{2})\d+?$/, "$1");
-      } else {
-        // CNPJ: 00.000.000/0000-00
-        formatted = digits
-          .slice(0, 14)
-          .replace(/^(\d{2})(\d)/, "$1.$2")
-          .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-          .replace(/\.(\d{3})(\d)/, ".$1/$2")
-          .replace(/(\d{4})(\d)/, "$1-$2");
-      }
-      onChangeText?.(formatted);
+    if (mask && mask !== "none") {
+      const masked = applyMask(text, mask);
+      onChangeText?.(masked);
     } else {
       onChangeText?.(text);
     }

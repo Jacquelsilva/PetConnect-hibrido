@@ -9,6 +9,10 @@ export type RootStackParamList = {
   HomeOngs: undefined;
   SolicitacoesUsuario: undefined;
   SolicitacoesOngs: undefined;
+  Settings: undefined;
+  PetDetails: { pet?: any } | undefined;
+  Favoritos: undefined;
+  EditarPerfil: undefined;
 };
 
 export type LoginScreenProps = NativeStackScreenProps<
@@ -49,4 +53,24 @@ export type SolicitacoesUsuarioProps = NativeStackScreenProps<
 export type SolicitacoesOngsProps = NativeStackScreenProps<
   RootStackParamList,
   "SolicitacoesOngs"
+>;
+
+export type SettingsScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  "Settings"
+>;
+
+export type PetDetailsScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  "PetDetails"
+>;
+
+export type FavoritosScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  "Favoritos"
+>;
+
+export type EditarPerfilScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  "EditarPerfil"
 >;

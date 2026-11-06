@@ -1,7 +1,10 @@
 import * as WebBrowser from "expo-web-browser";
 import * as AuthSession from "expo-auth-session";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 WebBrowser.maybeCompleteAuthSession();
+
+const AUTH_STORAGE_KEY = "@PetConnect:auth_session";
 
 export interface LoginCredentials {
   document: string; // CPF or CNPJ
@@ -17,6 +20,33 @@ export interface AuthResponse {
     email?: string;
     type: "user" | "ong";
   };
+}
+
+export async function saveSession(session: AuthResponse): Promise<void> {
+  try {
+    await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+  } catch (error) {
+    console.error("Erro ao salvar sessão no AsyncStorage:", error);
+  }
+}
+
+export async function getSession(): Promise<AuthResponse | null> {
+  try {
+    const data = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
+    if (!data) return null;
+    return JSON.parse(data) as AuthResponse;
+  } catch (error) {
+    console.error("Erro ao recuperar sessão do AsyncStorage:", error);
+    return null;
+  }
+}
+
+export async function clearSession(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
+  } catch (error) {
+    console.error("Erro ao limpar sessão do AsyncStorage:", error);
+  }
 }
 
 export async function loginUser(credentials: LoginCredentials): Promise<AuthResponse> {
@@ -37,11 +67,12 @@ export async function loginUser(credentials: LoginCredentials): Promise<AuthResp
     }
 
     const data: AuthResponse = await response.json();
+    await saveSession(data);
     return data;
   } catch (error: any) {
     if (error.message && error.message.includes("Network request failed")) {
       console.warn("API unreachable, using offline fallback auth.");
-      return {
+      const fallbackSession: AuthResponse = {
         token: "mock-jwt-token-12345",
         user: {
           id: "1",
@@ -50,6 +81,8 @@ export async function loginUser(credentials: LoginCredentials): Promise<AuthResp
           type: "user",
         },
       };
+      await saveSession(fallbackSession);
+      return fallbackSession;
     }
     throw error;
   }
@@ -74,6 +107,8 @@ export async function loginWithGoogle(): Promise<AuthResponse> {
 
     const result = await request.promptAsync(discovery);
 
+    let session: AuthResponse;
+
     if (result.type === "success" && result.params?.access_token) {
       const token = result.params.access_token;
       
@@ -89,10 +124,10 @@ export async function loginWithGoogle(): Promise<AuthResponse> {
         throw new Error("Falha na autenticação com o Google no servidor.");
       }
 
-      return await apiResponse.json();
+      session = await apiResponse.json();
     } else {
       console.warn("Google auth session not completed or dismissed, using fallback Google login.");
-      return {
+      session = {
         token: "mock-google-jwt-token-98765",
         user: {
           id: "google-user-1",
@@ -102,9 +137,12 @@ export async function loginWithGoogle(): Promise<AuthResponse> {
         },
       };
     }
+
+    await saveSession(session);
+    return session;
   } catch (error: any) {
     console.warn("Google login fallback triggered due to:", error?.message);
-    return {
+    const fallbackSession: AuthResponse = {
       token: "mock-google-jwt-token-98765",
       user: {
         id: "google-user-1",
@@ -113,5 +151,7 @@ export async function loginWithGoogle(): Promise<AuthResponse> {
         type: "user",
       },
     };
+    await saveSession(fallbackSession);
+    return fallbackSession;
   }
 }

@@ -1,4 +1,4 @@
-
+import React from "react";
 import {
   View,
   Text,
@@ -6,18 +6,32 @@ import {
   StyleSheet,
   TextInputProps,
 } from "react-native";
+import { applyMask } from "@/utils/masks";
 
 interface InputProps extends TextInputProps {
   label?: string;
   errorMessage?: string;
+  mask?: "cpf" | "cnpj" | "phone" | "cep" | "cpf_cnpj" | "none";
 }
 
 export function Input({
   label,
   errorMessage,
+  mask = "none",
+  value,
+  onChangeText,
   style,
   ...rest
 }: InputProps) {
+  const handleTextChange = (text: string) => {
+    if (mask && mask !== "none") {
+      const masked = applyMask(text, mask);
+      onChangeText?.(masked);
+    } else {
+      onChangeText?.(text);
+    }
+  };
+
   return (
     <View style={styles.wrapper}>
       {!!label && (
@@ -31,6 +45,8 @@ export function Input({
           style,
         ]}
         placeholderTextColor="#888"
+        value={value}
+        onChangeText={handleTextChange}
         {...rest}
       />
 
@@ -44,6 +60,7 @@ export function Input({
 const styles = StyleSheet.create({
   wrapper: {
     marginBottom: 10,
+    width: "100%",
   },
 
   label: {
@@ -54,7 +71,7 @@ const styles = StyleSheet.create({
   },
 
   input: {
-    height: 42,
+    height: 48,
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 8,

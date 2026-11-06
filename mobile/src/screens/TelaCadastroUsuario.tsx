@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 
 import {
@@ -12,9 +11,11 @@ import {
 
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { Header } from "@/components/ui/Header";
 
 import { getDatabase } from "@/database/Database";
 import { inserirUsuario } from "@/database/UsuarioDAO";
+import { saveSession } from "@/services/auth";
 
 import type { Usuario } from "@/models/types";
 import type { CadastroUsuarioProps } from "@/types/navigation";
@@ -139,6 +140,22 @@ export default function TelaCadastroUsuario({
 
       console.log("5 - CADASTRO REALIZADO COM SUCESSO");
 
+      const usuarioCriado = await db.getFirstAsync<Usuario>(
+        "SELECT * FROM usuarios WHERE email = ?",
+        [novoUsuario.email]
+      );
+
+      await saveSession({
+        token: "registered-user-token-" + Date.now(),
+        user: {
+          id: String(usuarioCriado?.id || "1"),
+          name: novoUsuario.nome,
+          document: novoUsuario.cpf,
+          email: novoUsuario.email,
+          type: "user",
+        },
+      });
+
       navigation.replace("HomeUsuario");
 
     } catch (error) {
@@ -159,17 +176,15 @@ export default function TelaCadastroUsuario({
       style={styles.flex}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      <Header title="Criar Conta" onBackPress={() => navigation.goBack()} />
       <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>Cadastro de usuário</Text>
-
+        <Text style={styles.title}>Cadastre-se</Text>
         <Text style={styles.subtitle}>
-          Preencha seus dados para encontrar animais disponíveis para adoção.
+          Preencha os dados abaixo para começar a adotar.
         </Text>
-
-        <Text style={styles.section}>Dados pessoais</Text>
 
         <Input
           label="Nome completo"
@@ -183,11 +198,12 @@ export default function TelaCadastroUsuario({
 
         <Input
           label="CPF"
-          placeholder="Digite seu CPF"
+          placeholder="000.000.000-00"
           value={cpf}
           onChangeText={setCpf}
           keyboardType="numeric"
           maxLength={14}
+          mask="cpf"
         />
         {erros.cpf && (
           <Text style={styles.error}>{erros.cpf}</Text>
@@ -231,11 +247,12 @@ export default function TelaCadastroUsuario({
 
         <Input
           label="CEP"
-          placeholder="Digite seu CEP"
+          placeholder="00000-000"
           value={cep}
           onChangeText={setCep}
           keyboardType="numeric"
           maxLength={9}
+          mask="cep"
         />
         {erros.cep && (
           <Text style={styles.error}>{erros.cep}</Text>
@@ -294,6 +311,9 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 24,
     paddingBottom: 40,
+    maxWidth: 480,
+    width: "100%",
+    alignSelf: "center",
   },
 
   title: {
