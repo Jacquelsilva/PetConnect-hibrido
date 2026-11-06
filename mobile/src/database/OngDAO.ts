@@ -1,6 +1,6 @@
 
-import type { SQLiteDatabase } from 'expo-sqlite';
-import type { Ong } from '../models/types';
+import type { SQLiteDatabase } from "expo-sqlite";
+import type { Ong } from "../models/types";
 
 export async function inserirOng(
   db: SQLiteDatabase,
@@ -20,12 +20,15 @@ export async function inserirOng(
         ong.estado,
         ong.cidade,
         ong.endereco,
-        ong.telefone ?? null
+        ong.telefone ?? null,
       ]
     );
 
+    console.log("ONG INSERIDA. ID:", result.lastInsertRowId);
+
     return result.changes > 0;
-  } catch {
+  } catch (error) {
+    console.error("ERRO AO INSERIR ONG NO SQLITE:", error);
     return false;
   }
 }
@@ -36,7 +39,7 @@ export async function loginOng(
   senha: string
 ): Promise<Ong | null> {
   return db.getFirstAsync<Ong>(
-    'SELECT * FROM ongs WHERE email = ? AND senha = ?',
+    "SELECT * FROM ongs WHERE email = ? AND senha = ?",
     [email, senha]
   );
 }
@@ -45,7 +48,7 @@ export async function listarOngs(
   db: SQLiteDatabase
 ): Promise<Ong[]> {
   return db.getAllAsync<Ong>(
-    'SELECT * FROM ongs ORDER BY id DESC'
+    "SELECT * FROM ongs ORDER BY id DESC"
   );
 }
 
@@ -70,7 +73,7 @@ export async function atualizarOng(
       ong.cidade,
       ong.endereco,
       ong.telefone ?? null,
-      ong.id
+      ong.id,
     ]
   );
 
@@ -82,7 +85,7 @@ export async function excluirOng(
   id: number
 ): Promise<boolean> {
   const result = await db.runAsync(
-    'DELETE FROM ongs WHERE id = ?',
+    "DELETE FROM ongs WHERE id = ?",
     [id]
   );
 

@@ -1,5 +1,6 @@
 
 import React, { useState } from "react";
+
 import {
   Text,
   StyleSheet,
@@ -11,6 +12,11 @@ import {
 
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+
+import { getDatabase } from "@/database/Database";
+import { inserirUsuario } from "@/database/UsuarioDAO";
+
+import type { Usuario } from "@/models/types";
 import type { CadastroUsuarioProps } from "@/types/navigation";
 
 type Erros = Partial<
@@ -28,9 +34,7 @@ type Erros = Partial<
   >
 >;
 
-const somenteDigitos = (valor: string) => valor.replace(/\D/g, "");
-
-export function TelaCadastroUsuario({
+export default function TelaCadastroUsuario({
   navigation,
 }: CadastroUsuarioProps) {
   const [nome, setNome] = useState("");
@@ -42,58 +46,112 @@ export function TelaCadastroUsuario({
   const [estado, setEstado] = useState("");
   const [cidade, setCidade] = useState("");
   const [endereco, setEndereco] = useState("");
+
   const [erros, setErros] = useState<Erros>({});
+  const [carregando, setCarregando] = useState(false);
+
+  const somenteDigitos = (valor: string): string => {
+    return valor.replace(/\D/g, "");
+  };
 
   function validar(): boolean {
     const novosErros: Erros = {};
 
-    if (nome.trim().split(/\s+/).filter(Boolean).length < 2)
-      novosErros.nome = "Informe nome e sobrenome.";
+    if (nome.trim().split(/\s+/).filter(Boolean).length < 2) {
+      novosErros.nome = "Informe seu nome completo.";
+    }
 
-    if (cpf.length !== 11)
-      novosErros.cpf = "O CPF deve ter 11 dígitos.";
+    if (somenteDigitos(cpf).length !== 11) {
+      novosErros.cpf = "O CPF deve conter 11 números.";
+    }
 
-    if (!/^\S+@\S+\.\S+$/.test(email))
-      novosErros.email = "E-mail inválido.";
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
+      novosErros.email = "Informe um e-mail válido.";
+    }
 
-    if (senha.length < 6)
-      novosErros.senha = "A senha deve ter ao menos 6 caracteres.";
+    if (senha.length < 6) {
+      novosErros.senha = "A senha deve ter pelo menos 6 caracteres.";
+    }
 
-    if (confirmarSenha !== senha)
+    if (!confirmarSenha || confirmarSenha !== senha) {
       novosErros.confirmarSenha = "As senhas não coincidem.";
+    }
 
-    if (cep.length !== 8)
-      novosErros.cep = "O CEP deve ter 8 dígitos.";
+    if (somenteDigitos(cep).length !== 8) {
+      novosErros.cep = "O CEP deve conter 8 números.";
+    }
 
-    if (estado.length !== 2)
-      novosErros.estado = "Use a sigla do estado (ex: SP).";
+    if (estado.trim().length !== 2) {
+      novosErros.estado = "Informe a sigla do estado.";
+    }
 
-    if (!cidade.trim())
-      novosErros.cidade = "Informe a cidade.";
+    if (!cidade.trim()) {
+      novosErros.cidade = "Informe sua cidade.";
+    }
 
-    if (!endereco.trim())
-      novosErros.endereco = "Informe o endereço.";
+    if (!endereco.trim()) {
+      novosErros.endereco = "Informe seu endereço.";
+    }
 
     setErros(novosErros);
+
     return Object.keys(novosErros).length === 0;
   }
 
-  function handleCadastrar() {
-    if (!validar()) {
-      Alert.alert("Atenção", "Corrija os campos destacados.");
-      return;
-    }
+  async function handleCadastrar() {
+    if (carregando) return;
 
-    Alert.alert(
-      "Sucesso",
-      "Usuário cadastrado com sucesso!",
-      [
-        {
-          text: "Continuar",
-          onPress: () => navigation.replace("HomeUsuario"),
-        },
-      ]
-    );
+    if (!validar()) return;
+
+    setCarregando(true);
+
+    try {
+      console.log("1 - BOTÃO CLICADO");
+
+      const novoUsuario: Usuario = {
+        nome: nome.trim(),
+        cpf: somenteDigitos(cpf),
+        email: email.trim().toLowerCase(),
+        senha,
+        cep: somenteDigitos(cep),
+        estado: estado.trim().toUpperCase(),
+        cidade: cidade.trim(),
+        endereco: endereco.trim(),
+      };
+
+      console.log("2 - DADOS DO USUÁRIO:", novoUsuario);
+
+      const db = await getDatabase();
+
+      console.log("3 - BANCO ABERTO");
+
+      const resultado = await inserirUsuario(db, novoUsuario);
+
+      console.log("4 - RESULTADO DA INSERÇÃO:", resultado);
+
+      if (!resultado) {
+        Alert.alert(
+          "Erro no cadastro",
+          "Não foi possível realizar o cadastro. Verifique se o e-mail já está cadastrado."
+        );
+        return;
+      }
+
+      console.log("5 - CADASTRO REALIZADO COM SUCESSO");
+
+      navigation.replace("HomeUsuario");
+
+    } catch (error) {
+      console.error("ERRO AO CADASTRAR USUÁRIO:", error);
+
+      Alert.alert(
+        "Erro",
+        "Ocorreu um problema ao cadastrar o usuário."
+      );
+
+    } finally {
+      setCarregando(false);
+    }
   }
 
   return (
@@ -105,104 +163,122 @@ export function TelaCadastroUsuario({
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>Cadastro de Usuário</Text>
+        <Text style={styles.title}>Cadastro de usuário</Text>
 
         <Text style={styles.subtitle}>
-          Preencha seus dados para criar a conta
+          Preencha seus dados para encontrar animais disponíveis para adoção.
         </Text>
+
+        <Text style={styles.section}>Dados pessoais</Text>
 
         <Input
           label="Nome completo"
-          placeholder="Ex: Maria da Silva"
+          placeholder="Digite seu nome completo"
           value={nome}
           onChangeText={setNome}
-          errorMessage={erros.nome}
         />
+        {erros.nome && (
+          <Text style={styles.error}>{erros.nome}</Text>
+        )}
 
         <Input
           label="CPF"
-          placeholder="Somente números"
-          keyboardType="numeric"
-          maxLength={11}
+          placeholder="Digite seu CPF"
           value={cpf}
-          onChangeText={(t) => setCpf(somenteDigitos(t))}
-          errorMessage={erros.cpf}
+          onChangeText={setCpf}
+          keyboardType="numeric"
+          maxLength={14}
         />
+        {erros.cpf && (
+          <Text style={styles.error}>{erros.cpf}</Text>
+        )}
 
         <Input
           label="E-mail"
-          placeholder="seuemail@exemplo.com"
-          keyboardType="email-address"
-          autoCapitalize="none"
+          placeholder="Digite seu e-mail"
           value={email}
           onChangeText={setEmail}
-          errorMessage={erros.email}
+          keyboardType="email-address"
+          autoCapitalize="none"
         />
+        {erros.email && (
+          <Text style={styles.error}>{erros.email}</Text>
+        )}
 
         <Input
           label="Senha"
-          placeholder="Mínimo 6 caracteres"
-          secureTextEntry
+          placeholder="Digite sua senha"
           value={senha}
           onChangeText={setSenha}
-          errorMessage={erros.senha}
+          secureTextEntry
         />
+        {erros.senha && (
+          <Text style={styles.error}>{erros.senha}</Text>
+        )}
 
         <Input
           label="Confirmar senha"
-          placeholder="Repita a senha"
-          secureTextEntry
+          placeholder="Digite sua senha novamente"
           value={confirmarSenha}
           onChangeText={setConfirmarSenha}
-          errorMessage={erros.confirmarSenha}
+          secureTextEntry
         />
+        {erros.confirmarSenha && (
+          <Text style={styles.error}>{erros.confirmarSenha}</Text>
+        )}
 
         <Text style={styles.section}>Endereço</Text>
 
         <Input
           label="CEP"
-          placeholder="Somente números"
-          keyboardType="numeric"
-          maxLength={8}
+          placeholder="Digite seu CEP"
           value={cep}
-          onChangeText={(t) => setCep(somenteDigitos(t))}
-          errorMessage={erros.cep}
+          onChangeText={setCep}
+          keyboardType="numeric"
+          maxLength={9}
         />
+        {erros.cep && (
+          <Text style={styles.error}>{erros.cep}</Text>
+        )}
 
         <Input
           label="Estado"
-          placeholder="UF"
-          autoCapitalize="characters"
-          maxLength={2}
+          placeholder="Ex.: SP"
           value={estado}
           onChangeText={setEstado}
-          errorMessage={erros.estado}
+          autoCapitalize="characters"
+          maxLength={2}
         />
+        {erros.estado && (
+          <Text style={styles.error}>{erros.estado}</Text>
+        )}
 
         <Input
           label="Cidade"
-          placeholder="Cidade"
+          placeholder="Digite sua cidade"
           value={cidade}
           onChangeText={setCidade}
-          errorMessage={erros.cidade}
         />
+        {erros.cidade && (
+          <Text style={styles.error}>{erros.cidade}</Text>
+        )}
 
         <Input
           label="Endereço"
           placeholder="Rua, número e bairro"
           value={endereco}
           onChangeText={setEndereco}
-          errorMessage={erros.endereco}
         />
+        {erros.endereco && (
+          <Text style={styles.error}>{erros.endereco}</Text>
+        )}
 
         <Button
-          title="Cadastrar Usuário"
+          title={carregando ? "Cadastrando..." : "Cadastrar Usuário"}
           variant="primary"
-          onPress={() => {
-            handleCadastrar();
-            navigation.replace("HomeUsuario");
-          }}
-/>
+          onPress={handleCadastrar}
+          disabled={carregando}
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -211,31 +287,41 @@ export function TelaCadastroUsuario({
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
-    backgroundColor: "#F9F9F9",
+    backgroundColor: "#FFFFFF",
   },
+
   container: {
-    padding: 24,
     flexGrow: 1,
-    justifyContent: "center",
+    padding: 24,
+    paddingBottom: 40,
   },
+
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: "bold",
-    color: "#333",
-    textAlign: "center",
+    color: "#333333",
+    marginBottom: 8,
   },
+
   subtitle: {
-    fontSize: 14,
-    color: "#666",
-    textAlign: "center",
-    marginTop: 4,
-    marginBottom: 24,
+    fontSize: 15,
+    color: "#666666",
+    marginBottom: 28,
+    lineHeight: 22,
   },
+
   section: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
-    marginTop: 8,
-    marginBottom: 12,
+    color: "#333333",
+    marginTop: 16,
+    marginBottom: 16,
+  },
+
+  error: {
+    color: "#D32F2F",
+    fontSize: 12,
+    marginTop: -8,
+    marginBottom: 10,
   },
 });

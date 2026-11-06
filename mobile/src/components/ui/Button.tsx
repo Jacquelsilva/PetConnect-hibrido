@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   Pressable,
@@ -26,25 +27,36 @@ export function Button({
   icon,
   style,
   disabled,
+  onPress,
   ...rest
 }: ButtonProps) {
   return (
     <Pressable
+      {...rest}
       disabled={disabled}
+      onPress={(event) => {
+        onPress?.(event);
+      }}
       style={({ pressed }) => [
         styles.base,
         buttonVariants[variant],
         pressed && !disabled && buttonPressedVariants[variant],
         disabled && styles.disabled,
-        typeof style === "function" ? style({ pressed }) : style,
+        typeof style === "function"
+          ? style({ pressed })
+          : style,
       ]}
-      {...rest}
     >
       {({ pressed }) => {
         if (title || icon) {
           return (
             <View style={styles.contentContainer}>
-              {icon && <View style={styles.iconContainer}>{icon}</View>}
+              {icon && (
+                <View style={styles.iconContainer}>
+                  {icon}
+                </View>
+              )}
+
               {title && (
                 <Text
                   style={[
@@ -91,10 +103,7 @@ const styles = StyleSheet.create({
   },
 });
 
-const buttonVariants: Record<
-  ButtonVariant,
-  StyleProp<ViewStyle>
-> = StyleSheet.create({
+const buttonVariants: Record<ButtonVariant, StyleProp<ViewStyle>> = {
   primary: {
     backgroundColor: "#4CAF50",
   },
@@ -111,12 +120,9 @@ const buttonVariants: Record<
     borderWidth: 1.5,
     borderColor: "#4CAF50",
   },
-});
+};
 
-const buttonPressedVariants: Record<
-  ButtonVariant,
-  StyleProp<ViewStyle>
-> = StyleSheet.create({
+const buttonPressedVariants: Record<ButtonVariant, StyleProp<ViewStyle>> = {
   primary: {
     backgroundColor: "#388E3C",
   },
@@ -129,12 +135,9 @@ const buttonPressedVariants: Record<
   outline: {
     backgroundColor: "rgba(76, 175, 80, 0.1)",
   },
-});
+};
 
-const textVariants: Record<
-  ButtonVariant,
-  StyleProp<TextStyle>
-> = StyleSheet.create({
+const textVariants: Record<ButtonVariant, StyleProp<TextStyle>> = {
   primary: {
     color: "#FFFFFF",
   },
@@ -147,12 +150,9 @@ const textVariants: Record<
   outline: {
     color: "#4CAF50",
   },
-});
+};
 
-const textPressedVariants: Record<
-  ButtonVariant,
-  StyleProp<TextStyle>
-> = StyleSheet.create({
+const textPressedVariants: Record<ButtonVariant, StyleProp<TextStyle>> = {
   primary: {
     color: "#FFFFFF",
   },
@@ -165,4 +165,4 @@ const textPressedVariants: Record<
   outline: {
     color: "#388E3C",
   },
-});
+};

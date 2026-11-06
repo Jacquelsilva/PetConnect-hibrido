@@ -1,12 +1,25 @@
 
-import type { SQLiteDatabase } from 'expo-sqlite';
-import type { Usuario } from '../models/types';
+import type { SQLiteDatabase } from "expo-sqlite";
+import type { Usuario } from "../models/types";
 
 export async function inserirUsuario(
   db: SQLiteDatabase,
   usuario: Usuario
 ): Promise<boolean> {
   try {
+    console.log("INICIANDO INSERÇÃO DO USUÁRIO...");
+    console.log("E-MAIL:", usuario.email);
+
+    const existente = await db.getFirstAsync<{ id: number }>(
+      "SELECT id FROM usuarios WHERE email = ?",
+      [usuario.email]
+    );
+
+    if (existente) {
+      console.log("E-MAIL JÁ CADASTRADO:", existente.id);
+      return false;
+    }
+
     const result = await db.runAsync(
       `INSERT INTO usuarios
        (nome, cpf, email, senha, cep, estado, cidade, endereco)
@@ -19,12 +32,18 @@ export async function inserirUsuario(
         usuario.cep,
         usuario.estado,
         usuario.cidade,
-        usuario.endereco
+        usuario.endereco,
       ]
     );
 
+    console.log("USUÁRIO INSERIDO!");
+    console.log("ID:", result.lastInsertRowId);
+    console.log("ALTERAÇÕES:", result.changes);
+
     return result.changes > 0;
-  } catch {
+
+  } catch (error) {
+    console.error("ERRO AO INSERIR USUÁRIO NO SQLITE:", error);
     return false;
   }
 }
@@ -35,7 +54,7 @@ export async function loginUsuario(
   senha: string
 ): Promise<Usuario | null> {
   return db.getFirstAsync<Usuario>(
-    'SELECT * FROM usuarios WHERE email = ? AND senha = ?',
+    "SELECT * FROM usuarios WHERE email = ? AND senha = ?",
     [email, senha]
   );
 }
@@ -45,7 +64,7 @@ export async function buscarUsuarioPorId(
   id: number
 ): Promise<Usuario | null> {
   return db.getFirstAsync<Usuario>(
-    'SELECT * FROM usuarios WHERE id = ?',
+    "SELECT * FROM usuarios WHERE id = ?",
     [id]
   );
 }
@@ -54,7 +73,7 @@ export async function listarUsuarios(
   db: SQLiteDatabase
 ): Promise<Usuario[]> {
   return db.getAllAsync<Usuario>(
-    'SELECT * FROM usuarios ORDER BY id DESC'
+    "SELECT * FROM usuarios ORDER BY id DESC"
   );
 }
 
@@ -78,7 +97,7 @@ export async function atualizarUsuario(
       usuario.estado,
       usuario.cidade,
       usuario.endereco,
-      usuario.id
+      usuario.id,
     ]
   );
 
@@ -90,7 +109,7 @@ export async function excluirUsuario(
   id: number
 ): Promise<boolean> {
   const result = await db.runAsync(
-    'DELETE FROM usuarios WHERE id = ?',
+    "DELETE FROM usuarios WHERE id = ?",
     [id]
   );
 
