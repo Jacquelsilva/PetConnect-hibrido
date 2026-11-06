@@ -41,3 +41,15 @@ yarn-error.*
 /android
 
 .vscode
+
+
+# ==========================================
+# Ferramentas de IA e OpenSpec (Ocultos do Git)
+# ==========================================
+.gemini/
+.claude/
+.cursor/
+.devin/
+.agents/
+openspec/
+TUTORIAL_AUDIO_EXPO.md

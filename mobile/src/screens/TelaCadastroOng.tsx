@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 
 import {
@@ -12,9 +11,11 @@ import {
 
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { Header } from "@/components/ui/Header";
 
 import { getDatabase } from "@/database/Database";
 import { inserirOng } from "@/database/OngDAO";
+import { saveSession } from "@/services/auth";
 
 import type { Ong } from "@/models/types";
 import type { CadastroOngProps } from "@/types/navigation";
@@ -138,6 +139,22 @@ export default function TelaCadastroOng({
 
       console.log("5 - CADASTRO REALIZADO COM SUCESSO");
 
+      const ongCriada = await db.getFirstAsync<Ong>(
+        "SELECT * FROM ongs WHERE email = ?",
+        [novaOng.email]
+      );
+
+      await saveSession({
+        token: "registered-ong-token-" + Date.now(),
+        user: {
+          id: String(ongCriada?.id || "1"),
+          name: novaOng.nome,
+          document: novaOng.cnpj,
+          email: novaOng.email,
+          type: "ong",
+        },
+      });
+
       navigation.replace("HomeOngs");
 
     } catch (error) {
@@ -158,23 +175,19 @@ export default function TelaCadastroOng({
       style={styles.flex}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      <Header title="Cadastro de ONG" onBackPress={() => navigation.goBack()} />
       <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>Cadastro de ONG</Text>
-
+        <Text style={styles.title}>Cadastre sua ONG</Text>
         <Text style={styles.subtitle}>
-          Cadastre sua organização para divulgar animais disponíveis para adoção.
-        </Text>
-
-        <Text style={styles.section}>
-          Dados da organização
+          Conecte sua instituição a milhares de adotantes em potencial.
         </Text>
 
         <Input
           label="Nome da ONG"
-          placeholder="Digite o nome da organização"
+          placeholder="Digite o nome da instituição"
           value={nome}
           onChangeText={setNome}
         />
@@ -184,11 +197,12 @@ export default function TelaCadastroOng({
 
         <Input
           label="CNPJ"
-          placeholder="Digite o CNPJ"
+          placeholder="00.000.000/0000-00"
           value={cnpj}
           onChangeText={setCnpj}
           keyboardType="numeric"
           maxLength={18}
+          mask="cnpj"
         />
         {erros.cnpj && (
           <Text style={styles.error}>{erros.cnpj}</Text>
@@ -221,11 +235,12 @@ export default function TelaCadastroOng({
 
         <Input
           label="CEP"
-          placeholder="Digite o CEP"
+          placeholder="00000-000"
           value={cep}
           onChangeText={setCep}
           keyboardType="numeric"
           maxLength={9}
+          mask="cep"
         />
         {erros.cep && (
           <Text style={styles.error}>{erros.cep}</Text>
@@ -284,6 +299,9 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 24,
     paddingBottom: 40,
+    maxWidth: 480,
+    width: "100%",
+    alignSelf: "center",
   },
 
   title: {

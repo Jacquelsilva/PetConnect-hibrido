@@ -30,16 +30,14 @@ export function TelaHomeOngs({ navigation }: Props) {
 
   const acoes = [
     {
-      titulo: "Cadastrar animal",
-      icone: "add-circle" as const,
-      onPress: () => {
-        // navigation.navigate("CadastroAnimal");
-      },
-    },
-    {
       titulo: "Ver solicitações",
       icone: "document-text" as const,
       onPress: () => navigation.navigate("SolicitacoesOngs"),
+    },
+    {
+      titulo: "Configurações",
+      icone: "settings" as const,
+      onPress: () => navigation.navigate("Settings"),
     },
   ];
 
@@ -58,6 +56,14 @@ export function TelaHomeOngs({ navigation }: Props) {
       icone: "people" as const,
       etiqueta: "5 solicitações pendentes",
       onPress: () => navigation.navigate("SolicitacoesOngs"),
+    },
+    {
+      id: "3",
+      titulo: "Configurações",
+      descricao: "Gerencie dados da ONG e preferências.",
+      icone: "settings" as const,
+      etiqueta: "Configurações da conta",
+      onPress: () => navigation.navigate("Settings"),
     },
   ];
 

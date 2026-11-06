@@ -8,20 +8,23 @@ import {
   StyleProp,
   ViewStyle,
   TextStyle,
+  View,
 } from "react-native";
 
-export type ButtonVariant = "primary" | "secondary" | "outline";
+export type ButtonVariant = "primary" | "secondary" | "google" | "outline";
 
 interface ButtonProps extends PressableProps {
   title?: string;
   children?: React.ReactNode;
   variant?: ButtonVariant;
+  icon?: React.ReactNode;
 }
 
 export function Button({
   title,
   children,
   variant = "primary",
+  icon,
   style,
   disabled,
   onPress,
@@ -32,7 +35,6 @@ export function Button({
       {...rest}
       disabled={disabled}
       onPress={(event) => {
-        console.log("BUTTON CLICADO!");
         onPress?.(event);
       }}
       style={({ pressed }) => [
@@ -45,37 +47,56 @@ export function Button({
           : style,
       ]}
     >
-      {({ pressed }) => (
-        title ? (
-          <Text
-            style={[
-              styles.textBase,
-              textVariants[variant],
-              pressed && !disabled &&
-                textPressedVariants[variant],
-            ]}
-          >
-            {title}
-          </Text>
-        ) : (
-          children
-        )
-      )}
+      {({ pressed }) => {
+        if (title || icon) {
+          return (
+            <View style={styles.contentContainer}>
+              {icon && (
+                <View style={styles.iconContainer}>
+                  {icon}
+                </View>
+              )}
+
+              {title && (
+                <Text
+                  style={[
+                    styles.textBase,
+                    textVariants[variant],
+                    pressed && !disabled && textPressedVariants[variant],
+                  ]}
+                >
+                  {title}
+                </Text>
+              )}
+            </View>
+          );
+        }
+
+        return children;
+      }}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   base: {
-    paddingVertical: 14,
+    height: 48,
     paddingHorizontal: 20,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
   },
+  contentContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconContainer: {
+    marginRight: 8,
+  },
   textBase: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "600",
   },
   disabled: {
     opacity: 0.5,
@@ -88,6 +109,11 @@ const buttonVariants: Record<ButtonVariant, StyleProp<ViewStyle>> = {
   },
   secondary: {
     backgroundColor: "#6C757D",
+  },
+  google: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#DDDDDD",
   },
   outline: {
     backgroundColor: "transparent",
@@ -103,19 +129,40 @@ const buttonPressedVariants: Record<ButtonVariant, StyleProp<ViewStyle>> = {
   secondary: {
     backgroundColor: "#5A6268",
   },
+  google: {
+    backgroundColor: "#F5F5F5",
+  },
   outline: {
     backgroundColor: "rgba(76, 175, 80, 0.1)",
   },
 };
 
 const textVariants: Record<ButtonVariant, StyleProp<TextStyle>> = {
-  primary: { color: "#FFFFFF" },
-  secondary: { color: "#FFFFFF" },
-  outline: { color: "#4CAF50" },
+  primary: {
+    color: "#FFFFFF",
+  },
+  secondary: {
+    color: "#FFFFFF",
+  },
+  google: {
+    color: "#333333",
+  },
+  outline: {
+    color: "#4CAF50",
+  },
 };
 
 const textPressedVariants: Record<ButtonVariant, StyleProp<TextStyle>> = {
-  primary: { color: "#F0F0F0" },
-  secondary: { color: "#F0F0F0" },
-  outline: { color: "#388E3C" },
+  primary: {
+    color: "#FFFFFF",
+  },
+  secondary: {
+    color: "#FFFFFF",
+  },
+  google: {
+    color: "#000000",
+  },
+  outline: {
+    color: "#388E3C",
+  },
 };

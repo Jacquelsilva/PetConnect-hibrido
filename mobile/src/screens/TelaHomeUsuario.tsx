@@ -18,27 +18,46 @@ export function TelaHomeUsuario({ navigation }: Props) {
 
   const acoes = [
     {
+      titulo: "Meus Favoritos",
+      icone: "heart" as const,
+      onPress: () => navigation.navigate("Favoritos"),
+    },
+    {
       titulo: "Minhas solicitações",
       icone: "document-text" as const,
       onPress: () => navigation.navigate("SolicitacoesUsuario"),
+    },
+    {
+      titulo: "Configurações",
+      icone: "settings" as const,
+      onPress: () => navigation.navigate("Settings"),
     },
   ];
 
   const cartoes = [
     {
       id: "1",
-      titulo: "Encontrar animais",
-      descricao: "Conheça os animais disponíveis para adoção.",
-      icone: "paw" as const,
-      etiqueta: "Explore os animais",
+      titulo: "Meus Favoritos",
+      descricao: "Veja os pets que você favoritou.",
+      icone: "heart" as const,
+      etiqueta: "Acesse seus favoritos",
+      onPress: () => navigation.navigate("Favoritos"),
     },
     {
       id: "2",
       titulo: "Minhas solicitações",
       descricao: "Acompanhe o andamento dos seus pedidos de adoção.",
-      icone: "heart" as const,
+      icone: "document-text" as const,
       etiqueta: "Acompanhe suas solicitações",
       onPress: () => navigation.navigate("SolicitacoesUsuario"),
+    },
+    {
+      id: "3",
+      titulo: "Configurações",
+      descricao: "Gerencie sua conta e preferências.",
+      icone: "settings" as const,
+      etiqueta: "Configurações da conta",
+      onPress: () => navigation.navigate("Settings"),
     },
   ];
 

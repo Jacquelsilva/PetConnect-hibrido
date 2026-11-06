@@ -1,6 +1,7 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 export type RootStackParamList = {
+  Login: undefined;
   EscolhaCadastro: undefined;
   CadastroUsuario: undefined;
   CadastroOng: undefined;
@@ -8,7 +9,16 @@ export type RootStackParamList = {
   HomeOngs: undefined;
   SolicitacoesUsuario: undefined;
   SolicitacoesOngs: undefined;
+  Settings: undefined;
+  PetDetails: { pet?: any } | undefined;
+  Favoritos: undefined;
+  EditarPerfil: undefined;
 };
+
+export type LoginScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  "Login"
+>;
 
 export type EscolhaCadastroProps = NativeStackScreenProps<
   RootStackParamList,
@@ -43,4 +53,24 @@ export type SolicitacoesUsuarioProps = NativeStackScreenProps<
 export type SolicitacoesOngsProps = NativeStackScreenProps<
   RootStackParamList,
   "SolicitacoesOngs"
+>;
+
+export type SettingsScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  "Settings"
+>;
+
+export type PetDetailsScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  "PetDetails"
+>;
+
+export type FavoritosScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  "Favoritos"
+>;
+
+export type EditarPerfilScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  "EditarPerfil"
 >;
