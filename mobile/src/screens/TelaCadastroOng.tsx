@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 
 import {
   Text,
@@ -34,6 +34,26 @@ type Erros = Partial<
   >
 >;
 
+type RespostaViaCep = {
+  cep?: string;
+  logradouro?: string;
+  bairro?: string;
+  localidade?: string;
+  uf?: string;
+  erro?: boolean | string;
+};
+
+// Alert.alert não funciona na web, então usamos window.alert nesse caso
+function mostrarAviso(titulo: string, mensagem: string) {
+  if (Platform.OS === "web") {
+    if (typeof window !== "undefined") {
+      window.alert(`${titulo}\n\n${mensagem}`);
+    }
+  } else {
+    Alert.alert(titulo, mensagem);
+  }
+}
+
 export default function TelaCadastroOng({
   navigation,
 }: CadastroOngProps) {
@@ -48,10 +68,91 @@ export default function TelaCadastroOng({
 
   const [erros, setErros] = useState<Erros>({});
   const [carregando, setCarregando] = useState(false);
+  const [buscandoCep, setBuscandoCep] = useState(false);
+
+  // guarda o último CEP consultado para não repetir a busca
+  const ultimoCepBuscado = useRef<string>("");
 
   const somenteDigitos = (valor: string): string => {
     return valor.replace(/\D/g, "");
   };
+
+  // Busca o endereço no ViaCEP
+  async function buscarEnderecoPorCep(cepDigitos: string) {
+    if (cepDigitos.length !== 8) return;
+    if (cepDigitos === ultimoCepBuscado.current) return;
+
+    ultimoCepBuscado.current = cepDigitos;
+    setBuscandoCep(true);
+
+    try {
+      console.log("BUSCANDO CEP:", cepDigitos);
+
+      const resposta = await fetch(
+        `https://viacep.com.br/ws/${cepDigitos}/json/`
+      );
+
+      if (!resposta.ok) {
+        throw new Error(`Status ${resposta.status}`);
+      }
+
+      const dados: RespostaViaCep = await resposta.json();
+      console.log("RESPOSTA VIACEP:", JSON.stringify(dados));
+
+      if (dados.erro) {
+        ultimoCepBuscado.current = "";
+        setErros((anterior) => ({
+          ...anterior,
+          cep: "CEP não encontrado. Confira o número digitado.",
+        }));
+        return;
+      }
+
+      setEstado(dados.uf || "");
+      setCidade(dados.localidade || "");
+
+      const partesEndereco = [dados.logradouro, dados.bairro].filter(
+        (parte): parte is string => !!parte && parte.trim() !== ""
+      );
+
+      // CEPs gerais de cidade pequena não têm rua: mantém o que já estava digitado
+      if (partesEndereco.length > 0) {
+        setEndereco(partesEndereco.join(", "));
+      }
+
+      // limpa os erros dos campos que acabaram de ser preenchidos
+      setErros((anterior) => ({
+        ...anterior,
+        cep: undefined,
+        estado: undefined,
+        cidade: undefined,
+        endereco: partesEndereco.length > 0 ? undefined : anterior.endereco,
+      }));
+    } catch (error) {
+      console.error("ERRO AO BUSCAR CEP:", error);
+      ultimoCepBuscado.current = "";
+      mostrarAviso(
+        "Erro",
+        "Não foi possível buscar o CEP. Verifique sua internet ou preencha o endereço manualmente."
+      );
+    } finally {
+      setBuscandoCep(false);
+    }
+  }
+
+  function handleMudarCep(valor: string) {
+    setCep(valor);
+
+    const digitos = somenteDigitos(valor);
+
+    // se o usuário apagou/editou o CEP, libera uma nova busca
+    if (digitos.length < 8) {
+      ultimoCepBuscado.current = "";
+      return;
+    }
+
+    buscarEnderecoPorCep(digitos);
+  }
 
   function validar(): boolean {
     const novosErros: Erros = {};
@@ -69,8 +170,7 @@ export default function TelaCadastroOng({
     }
 
     if (senha.length < 6) {
-      novosErros.senha =
-        "A senha deve ter pelo menos 6 caracteres.";
+      novosErros.senha = "A senha deve ter pelo menos 6 caracteres.";
     }
 
     if (somenteDigitos(cep).length !== 8) {
@@ -95,7 +195,7 @@ export default function TelaCadastroOng({
   }
 
   const handleCadastrarOng = async () => {
-    if (carregando) {
+    if (carregando || buscandoCep) {
       return;
     }
 
@@ -130,7 +230,7 @@ export default function TelaCadastroOng({
       console.log("4 - RESULTADO DA INSERÇÃO:", resultado);
 
       if (!resultado) {
-        Alert.alert(
+        mostrarAviso(
           "Erro no cadastro",
           "Não foi possível cadastrar a ONG. Verifique se o e-mail já está cadastrado."
         );
@@ -144,10 +244,19 @@ export default function TelaCadastroOng({
         [novaOng.email]
       );
 
+      if (!ongCriada?.id) {
+        console.error("ERRO: ONG criada mas não encontrada no banco.");
+        mostrarAviso(
+          "Erro",
+          "Cadastro realizado, mas não foi possível iniciar a sessão. Faça login."
+        );
+        return;
+      }
+
       await saveSession({
         token: "registered-ong-token-" + Date.now(),
         user: {
-          id: String(ongCriada?.id || "1"),
+          id: String(ongCriada.id),
           name: novaOng.nome,
           document: novaOng.cnpj,
           email: novaOng.email,
@@ -156,15 +265,10 @@ export default function TelaCadastroOng({
       });
 
       navigation.replace("HomeOngs");
-
     } catch (error) {
       console.error("ERRO NO CADASTRO DA ONG:", error);
 
-      Alert.alert(
-        "Erro",
-        "Ocorreu um problema ao cadastrar a ONG."
-      );
-
+      mostrarAviso("Erro", "Ocorreu um problema ao cadastrar a ONG.");
     } finally {
       setCarregando(false);
     }
@@ -191,9 +295,7 @@ export default function TelaCadastroOng({
           value={nome}
           onChangeText={setNome}
         />
-        {erros.nome && (
-          <Text style={styles.error}>{erros.nome}</Text>
-        )}
+        {erros.nome && <Text style={styles.error}>{erros.nome}</Text>}
 
         <Input
           label="CNPJ"
@@ -204,9 +306,7 @@ export default function TelaCadastroOng({
           maxLength={18}
           mask="cnpj"
         />
-        {erros.cnpj && (
-          <Text style={styles.error}>{erros.cnpj}</Text>
-        )}
+        {erros.cnpj && <Text style={styles.error}>{erros.cnpj}</Text>}
 
         <Input
           label="E-mail"
@@ -216,9 +316,7 @@ export default function TelaCadastroOng({
           keyboardType="email-address"
           autoCapitalize="none"
         />
-        {erros.email && (
-          <Text style={styles.error}>{erros.email}</Text>
-        )}
+        {erros.email && <Text style={styles.error}>{erros.email}</Text>}
 
         <Input
           label="Senha"
@@ -227,24 +325,20 @@ export default function TelaCadastroOng({
           onChangeText={setSenha}
           secureTextEntry
         />
-        {erros.senha && (
-          <Text style={styles.error}>{erros.senha}</Text>
-        )}
+        {erros.senha && <Text style={styles.error}>{erros.senha}</Text>}
 
         <Text style={styles.section}>Endereço</Text>
 
         <Input
-          label="CEP"
+          label={buscandoCep ? "CEP (buscando endereço...)" : "CEP"}
           placeholder="00000-000"
           value={cep}
-          onChangeText={setCep}
+          onChangeText={handleMudarCep}
           keyboardType="numeric"
           maxLength={9}
           mask="cep"
         />
-        {erros.cep && (
-          <Text style={styles.error}>{erros.cep}</Text>
-        )}
+        {erros.cep && <Text style={styles.error}>{erros.cep}</Text>}
 
         <Input
           label="Estado"
@@ -254,9 +348,7 @@ export default function TelaCadastroOng({
           autoCapitalize="characters"
           maxLength={2}
         />
-        {erros.estado && (
-          <Text style={styles.error}>{erros.estado}</Text>
-        )}
+        {erros.estado && <Text style={styles.error}>{erros.estado}</Text>}
 
         <Input
           label="Cidade"
@@ -264,9 +356,7 @@ export default function TelaCadastroOng({
           value={cidade}
           onChangeText={setCidade}
         />
-        {erros.cidade && (
-          <Text style={styles.error}>{erros.cidade}</Text>
-        )}
+        {erros.cidade && <Text style={styles.error}>{erros.cidade}</Text>}
 
         <Input
           label="Endereço"
@@ -274,15 +364,13 @@ export default function TelaCadastroOng({
           value={endereco}
           onChangeText={setEndereco}
         />
-        {erros.endereco && (
-          <Text style={styles.error}>{erros.endereco}</Text>
-        )}
+        {erros.endereco && <Text style={styles.error}>{erros.endereco}</Text>}
 
         <Button
           title={carregando ? "Cadastrando..." : "Cadastrar ONG"}
           variant="primary"
           onPress={handleCadastrarOng}
-          disabled={carregando}
+          disabled={carregando || buscandoCep}
         />
       </ScrollView>
     </KeyboardAvoidingView>

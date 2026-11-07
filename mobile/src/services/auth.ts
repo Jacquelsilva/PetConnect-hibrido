@@ -2,6 +2,8 @@ import * as WebBrowser from "expo-web-browser";
 import * as AuthSession from "expo-auth-session";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import { getDatabase } from "@/database/Database";
+
 WebBrowser.maybeCompleteAuthSession();
 
 const AUTH_STORAGE_KEY = "@PetConnect:auth_session";
@@ -49,56 +51,95 @@ export async function clearSession(): Promise<void> {
   }
 }
 
-export async function loginUser(credentials: LoginCredentials): Promise<AuthResponse> {
-  const apiUrl = process.env.EXPO_PUBLIC_API_URL || "https://api.petconnect.com.br";
+// Login local: consulta o SQLite (usuarios por CPF, ongs por CNPJ)
+export async function loginUser(
+  credentials: LoginCredentials
+): Promise<AuthResponse> {
+  const documento = credentials.document.replace(/\D/g, "");
+  const senha = credentials.password;
 
-  try {
-    const response = await fetch(`${apiUrl}/auth/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(credentials),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || "Credenciais inválidas ou erro no servidor.");
-    }
-
-    const data: AuthResponse = await response.json();
-    await saveSession(data);
-    return data;
-  } catch (error: any) {
-    if (error.message && error.message.includes("Network request failed")) {
-      console.warn("API unreachable, using offline fallback auth.");
-      const fallbackSession: AuthResponse = {
-        token: "mock-jwt-token-12345",
-        user: {
-          id: "1",
-          name: "PetConnect User",
-          document: credentials.document,
-          type: "user",
-        },
-      };
-      await saveSession(fallbackSession);
-      return fallbackSession;
-    }
-    throw error;
+  if (!documento || !senha) {
+    throw new Error("Informe o CPF/CNPJ e a senha.");
   }
+
+  const db = await getDatabase();
+
+  // CNPJ tem 14 dígitos (ONG), CPF tem 11 (usuário)
+  if (documento.length === 14) {
+    const ong = await db.getFirstAsync<{
+      id: number;
+      nome: string;
+      cnpj: string;
+      email: string;
+    }>("SELECT id, nome, cnpj, email FROM ongs WHERE cnpj = ? AND senha = ?", [
+      documento,
+      senha,
+    ]);
+
+    if (!ong) {
+      throw new Error("CNPJ ou senha inválidos.");
+    }
+
+    const session: AuthResponse = {
+      token: `local-ong-${ong.id}`,
+      user: {
+        id: String(ong.id),
+        name: ong.nome,
+        document: ong.cnpj,
+        email: ong.email,
+        type: "ong",
+      },
+    };
+
+    await saveSession(session);
+    return session;
+  }
+
+  const usuario = await db.getFirstAsync<{
+    id: number;
+    nome: string;
+    cpf: string;
+    email: string;
+  }>("SELECT id, nome, cpf, email FROM usuarios WHERE cpf = ? AND senha = ?", [
+    documento,
+    senha,
+  ]);
+
+  if (!usuario) {
+    throw new Error("CPF ou senha inválidos.");
+  }
+
+  const session: AuthResponse = {
+    token: `local-user-${usuario.id}`,
+    user: {
+      id: String(usuario.id),
+      name: usuario.nome,
+      document: usuario.cpf,
+      email: usuario.email,
+      type: "user",
+    },
+  };
+
+  await saveSession(session);
+  return session;
 }
 
 export async function loginWithGoogle(): Promise<AuthResponse> {
-  const clientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || "mock-google-client-id.apps.googleusercontent.com";
-  const apiUrl = process.env.EXPO_PUBLIC_API_URL || "https://api.petconnect.com.br";
+  const clientId =
+    process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ||
+    "mock-google-client-id.apps.googleusercontent.com";
+  const apiUrl =
+    process.env.EXPO_PUBLIC_API_URL || "https://api.petconnect.com.br";
 
   try {
     const redirectUri = AuthSession.makeRedirectUri({
       scheme: "petconnect",
     });
 
-    const discovery = await AuthSession.fetchDiscoveryAsync("https://accounts.google.com");
-    
+    const discovery = await AuthSession.fetchDiscoveryAsync(
+      "https://accounts.google.com"
+    );
+
     const request = new AuthSession.AuthRequest({
       clientId,
       scopes: ["profile", "email"],
@@ -111,7 +152,7 @@ export async function loginWithGoogle(): Promise<AuthResponse> {
 
     if (result.type === "success" && result.params?.access_token) {
       const token = result.params.access_token;
-      
+
       const apiResponse = await fetch(`${apiUrl}/auth/google`, {
         method: "POST",
         headers: {
@@ -126,7 +167,9 @@ export async function loginWithGoogle(): Promise<AuthResponse> {
 
       session = await apiResponse.json();
     } else {
-      console.warn("Google auth session not completed or dismissed, using fallback Google login.");
+      console.warn(
+        "Google auth session not completed or dismissed, using fallback Google login."
+      );
       session = {
         token: "mock-google-jwt-token-98765",
         user: {
@@ -153,5 +196,163 @@ export async function loginWithGoogle(): Promise<AuthResponse> {
     };
     await saveSession(fallbackSession);
     return fallbackSession;
+  }
+}
+
+function isMockToken(token?: string): boolean {
+  return !!token && token.startsWith("mock-");
+}
+
+function isLocalToken(token?: string): boolean {
+  return !!token && token.startsWith("local-");
+}
+
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string
+): Promise<void> {
+  const session = await getSession();
+  if (!session?.token) {
+    throw new Error("Sessão inválida. Faça login novamente.");
+  }
+
+  if (isMockToken(session.token)) {
+    return;
+  }
+
+  // Conta local: troca a senha direto no SQLite
+  if (isLocalToken(session.token)) {
+    const db = await getDatabase();
+    const tabela = session.user.type === "ong" ? "ongs" : "usuarios";
+    const id = Number(session.user.id);
+
+    const existe = await db.getFirstAsync<{ id: number }>(
+      `SELECT id FROM ${tabela} WHERE id = ? AND senha = ?`,
+      [id, currentPassword]
+    );
+
+    if (!existe) {
+      throw new Error("A senha atual está incorreta.");
+    }
+
+    await db.runAsync(`UPDATE ${tabela} SET senha = ? WHERE id = ?`, [
+      newPassword,
+      id,
+    ]);
+    return;
+  }
+
+  const apiUrl =
+    process.env.EXPO_PUBLIC_API_URL || "https://api.petconnect.com.br";
+
+  const response = await fetch(`${apiUrl}/auth/change-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.token}`,
+    },
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || "Não foi possível alterar a senha.");
+  }
+}
+
+export async function deleteAccount(): Promise<void> {
+  const session = await getSession();
+  if (!session?.token) {
+    throw new Error("Sessão inválida. Faça login novamente.");
+  }
+
+  if (isMockToken(session.token)) {
+    await clearSession();
+    return;
+  }
+
+  // Conta local: apaga a conta e os dados ligados a ela no SQLite
+  if (isLocalToken(session.token)) {
+    const db = await getDatabase();
+    const id = Number(session.user.id);
+
+    await db.withTransactionAsync(async () => {
+      if (session.user.type === "ong") {
+        const animaisDaOng = `SELECT CAST(id AS TEXT) FROM animais WHERE id_ong = ?`;
+
+        await db.runAsync(
+          `DELETE FROM favoritos WHERE id_animal IN (${animaisDaOng})`,
+          [id]
+        );
+        await db.runAsync(
+          `DELETE FROM solicitacoes WHERE id_animal IN (${animaisDaOng})`,
+          [id]
+        );
+        await db.runAsync("DELETE FROM animais WHERE id_ong = ?", [id]);
+        await db.runAsync("DELETE FROM ongs WHERE id = ?", [id]);
+      } else {
+        await db.runAsync("DELETE FROM favoritos WHERE id_usuario = ?", [id]);
+        await db.runAsync("DELETE FROM solicitacoes WHERE id_usuario = ?", [id]);
+        await db.runAsync("DELETE FROM usuarios WHERE id = ?", [id]);
+      }
+    });
+
+    await clearSession();
+    return;
+  }
+
+  const apiUrl =
+    process.env.EXPO_PUBLIC_API_URL || "https://api.petconnect.com.br";
+
+  const response = await fetch(`${apiUrl}/users/me`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${session.token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || "Não foi possível excluir a conta.");
+  }
+
+  await clearSession();
+}
+
+export async function getUserWhatsapp(): Promise<string | null> {
+  const session = await getSession();
+  if (
+    !session?.token ||
+    isMockToken(session.token) ||
+    isLocalToken(session.token)
+  ) {
+    return null;
+  }
+
+  const apiUrl =
+    process.env.EXPO_PUBLIC_API_URL || "https://api.petconnect.com.br";
+
+  try {
+    const response = await fetch(`${apiUrl}/users/me`, {
+      headers: { Authorization: `Bearer ${session.token}` },
+    });
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const raw =
+      data?.whatsapp ||
+      data?.phone ||
+      data?.telefone ||
+      data?.user?.whatsapp ||
+      data?.user?.phone ||
+      data?.user?.telefone;
+
+    const digits = String(raw || "").replace(/\D/g, "");
+    if (!digits) return null;
+
+    return digits.length <= 11 ? `55${digits}` : digits;
+  } catch (e) {
+    console.log("Erro ao buscar WhatsApp do usuário:", e);
+    return null;
   }
 }

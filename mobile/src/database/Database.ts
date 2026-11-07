@@ -1,8 +1,24 @@
-
 import * as SQLite from "expo-sqlite";
 
 let database: SQLite.SQLiteDatabase | null = null;
 let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
+
+async function garantirColuna(
+  db: SQLite.SQLiteDatabase,
+  tabela: string,
+  coluna: string,
+  definicao: string
+): Promise<void> {
+  const colunas = await db.getAllAsync<{ name: string }>(
+    `PRAGMA table_info(${tabela})`
+  );
+
+  if (!colunas.some((item) => item.name === coluna)) {
+    await db.execAsync(
+      `ALTER TABLE ${tabela} ADD COLUMN ${coluna} ${definicao}`
+    );
+  }
+}
 
 export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
   if (database) {
@@ -50,6 +66,7 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
           nome TEXT,
           especie TEXT,
           idade INTEGER,
+          data_nascimento TEXT,
           porte TEXT,
           sexo TEXT,
           descricao TEXT,
@@ -62,6 +79,7 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
           nome TEXT,
           especie TEXT,
           idade INTEGER,
+          data_nascimento TEXT,
           porte TEXT,
           sexo TEXT,
           descricao TEXT,
@@ -91,6 +109,9 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
           UNIQUE(id_usuario, id_animal)
         );
       `);
+
+      await garantirColuna(db, "animais", "data_nascimento", "TEXT");
+      await garantirColuna(db, "pets", "data_nascimento", "TEXT");
 
       database = db;
       console.log("BANCO DE DADOS INICIALIZADO!");

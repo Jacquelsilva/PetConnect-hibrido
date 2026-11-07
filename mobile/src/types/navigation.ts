@@ -13,7 +13,17 @@ export type RootStackParamList = {
   PetDetails: { pet?: any } | undefined;
   Favoritos: undefined;
   EditarPerfil: undefined;
+  Privacyandsecurity: undefined;
+  PrivacyPolicy: undefined;
+  Termsofuse: undefined;
+  Helpandsupport: undefined;
+  animalregistration: undefined;
+  manageanimals: undefined;
+  editanimal: { id: number };
+  animaldetails: { id: number };
+  solicitaradocao: { id: number };
 };
+
 
 export type LoginScreenProps = NativeStackScreenProps<
   RootStackParamList,
@@ -73,4 +83,19 @@ export type FavoritosScreenProps = NativeStackScreenProps<
 export type EditarPerfilScreenProps = NativeStackScreenProps<
   RootStackParamList,
   "EditarPerfil"
+>;
+
+export type HelpSupportScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  "Helpandsupport"
+>;
+
+export type PrivacySecurityScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  "Privacyandsecurity"
+>;
+
+export type AnimalDetailsScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  "animaldetails"
 >;

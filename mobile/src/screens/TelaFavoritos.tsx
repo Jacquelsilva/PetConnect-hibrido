@@ -1,89 +1,135 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, FlatList, Image, Pressable } from "react-native";
-import { Header } from "@/components/ui/Header";
-import { getSession } from "@/services/auth";
-import { getDatabase } from "@/database/Database";
-import { listarIdsFavoritos } from "@/database/FavoritosDAO";
-import { listarAnimais } from "@/database/AnimalDAO";
-import type { Animal } from "@/models/types";
-import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import type { RootStackParamList } from "@/types/navigation";
+import React, { useCallback, useState } from "react";
+import {
+  Text,
+  View,
+  Image,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+} from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 
-type Props = NativeStackScreenProps<RootStackParamList, "Favoritos">;
+import { Header } from "@/components/ui/Header";
 
-export function TelaFavoritos({ navigation }: Props) {
-  const [animaisFavoritos, setAnimaisFavoritos] = useState<Animal[]>([]);
-  const [loading, setLoading] = useState(true);
+import { getSession } from "@/services/auth";
+import { getDatabase } from "@/database/Database";
+import { listarIdsFavoritos, alternarFavorito, listarAnimaisFavoritos } from "@/database/FavoritosDAO";
 
-  useEffect(() => {
-    async function carregarFavoritos() {
-      try {
-        const session = await getSession();
-        if (!session || !session.user?.id) {
-          setLoading(false);
-          return;
+import type { Animal } from "@/models/types";
+import type { FavoritosScreenProps } from "@/types/navigation";
+
+function textoIdade(idade: number): string {
+  if (idade === 0) return "Menos de 1 ano";
+  return idade === 1 ? "1 ano" : `${idade} anos`;
+}
+
+export function TelaFavoritos({ navigation }: FavoritosScreenProps) {
+  const [animais, setAnimais] = useState<Animal[]>([]);
+  const [idUsuario, setIdUsuario] = useState<number | null>(null);
+  const [carregando, setCarregando] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      let ativo = true;
+
+      (async () => {
+        try {
+          const session = await getSession();
+          if (!session?.user?.id) return;
+
+          const id = Number(session.user.id);
+          const db = await getDatabase();
+          const lista = await listarAnimaisFavoritos(db, id);
+
+          if (ativo) {
+            setIdUsuario(id);
+            setAnimais(lista);
+          }
+        } catch (e) {
+          console.error("ERRO AO CARREGAR FAVORITOS:", e);
+        } finally {
+          if (ativo) setCarregando(false);
         }
-        const db = await getDatabase();
-        const idsFavoritos = await listarIdsFavoritos(db, Number(session.user.id));
-        const todosAnimais = await listarAnimais(db);
-        const favoritos = todosAnimais.filter((animal) =>
-          idsFavoritos.includes(String(animal.id))
-        );
-        setAnimaisFavoritos(favoritos);
-      } catch (e) {
-        console.error("Erro ao carregar favoritos:", e);
-      } finally {
-        setLoading(false);
-      }
-    }
-    carregarFavoritos();
-  }, []);
+      })();
 
-  const renderItem = ({ item }: { item: Animal }) => (
-    <Pressable
-      style={styles.card}
-      onPress={() => navigation.navigate("PetDetails", { pet: item })}
-    >
-      <Image
-        source={{
-          uri: item.foto_url || "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80",
-        }}
-        style={styles.image}
-      />
-      <View style={styles.info}>
-        <Text style={styles.name}>{item.nome}</Text>
-        <Text style={styles.details}>{item.especie} • {item.idade} anos • {item.porte}</Text>
-        <Pressable
-          style={styles.profileButton}
-          onPress={() => navigation.navigate("PetDetails", { pet: item })}
-        >
-          <Text style={styles.profileButtonText}>Ver perfil</Text>
-          <Ionicons name="chevron-forward" size={16} color="#0F766E" />
-        </Pressable>
-      </View>
-    </Pressable>
+      return () => {
+        ativo = false;
+      };
+    }, [])
   );
+
+  async function desfavoritar(animal: Animal) {
+    if (!animal.id || idUsuario === null) return;
+
+    try {
+      const db = await getDatabase();
+      await alternarFavorito(db, idUsuario, animal.id);
+      setAnimais((atuais) => atuais.filter((item) => item.id !== animal.id));
+    } catch (e) {
+      console.error("ERRO AO REMOVER FAVORITO:", e);
+    }
+  }
+
+  function verSobre(animal: Animal) {
+    if (!animal.id) return;
+    navigation.navigate("animaldetails", { id: animal.id });
+  }
+
+  function renderItem({ item }: { item: Animal }) {
+    return (
+      <View style={styles.card}>
+        <View style={styles.cardTopo}>
+          {item.foto_url ? (
+            <Image source={{ uri: item.foto_url }} style={styles.foto} />
+          ) : (
+            <View style={[styles.foto, styles.fotoVazia]}>
+              <Text style={styles.fotoVaziaTexto}>🐾</Text>
+            </View>
+          )}
+
+          <View style={styles.info}>
+            <Text style={styles.nome}>{item.nome}</Text>
+            <Text style={styles.detalhe}>
+              {item.especie} • {item.sexo} • {item.porte}
+            </Text>
+            <Text style={styles.detalhe}>{textoIdade(item.idade)}</Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.botaoCoracao}
+            onPress={() => desfavoritar(item)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="heart" size={26} color="#D32F2F" />
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity style={styles.botaoVer} onPress={() => verSobre(item)}>
+          <Ionicons name="paw" size={16} color="#FFFFFF" />
+          <Text style={styles.botaoVerTexto}>Ver sobre o animal</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <Header title="Meus Favoritos" onBackPress={() => navigation.goBack()} />
-      <View style={styles.content}>
-        {animaisFavoritos.length === 0 && !loading ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="heart-dislike-outline" size={64} color="#9CA3AF" />
-            <Text style={styles.emptyText}>Você ainda não favoritou nenhum pet.</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={animaisFavoritos}
-            keyExtractor={(item) => String(item.id)}
-            renderItem={renderItem}
-            contentContainerStyle={styles.listContainer}
-            showsVerticalScrollIndicator={false}
-          />
-        )}
-      </View>
+
+      <FlatList
+        data={animais}
+        keyExtractor={(item) => String(item.id)}
+        renderItem={renderItem}
+        contentContainerStyle={styles.lista}
+        ListEmptyComponent={
+          <Text style={styles.vazio}>
+            {carregando
+              ? "Carregando..."
+              : "Você ainda não favoritou nenhum animal.\nToque no coração de um animal para salvá-lo aqui."}
+          </Text>
+        }
+      />
     </View>
   );
 }
@@ -91,70 +137,81 @@ export function TelaFavoritos({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9F9F9",
+    backgroundColor: "#F8F9FA",
   },
-  content: {
-    flex: 1,
-    width: "100%",
-    maxWidth: 1080,
-    alignSelf: "center",
-  },
-  listContainer: {
+  lista: {
     padding: 16,
+    maxWidth: 480,
+    width: "100%",
+    alignSelf: "center",
+    flexGrow: 1,
   },
   card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
-    flexDirection: "row",
-    marginBottom: 16,
-    overflow: "hidden",
-    elevation: 2,
+    padding: 12,
+    marginBottom: 12,
+    gap: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  image: {
-    width: 100,
-    height: 100,
-    backgroundColor: "#E0E0E0",
+  cardTopo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  foto: {
+    width: 72,
+    height: 72,
+    borderRadius: 12,
+  },
+  fotoVazia: {
+    backgroundColor: "#E6F4F1",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  fotoVaziaTexto: {
+    fontSize: 28,
   },
   info: {
     flex: 1,
-    padding: 12,
-    justifyContent: "space-between",
   },
-  name: {
-    fontSize: 18,
+  nome: {
+    fontSize: 17,
     fontWeight: "bold",
-    color: "#0F766E",
+    color: "#333333",
+    marginBottom: 2,
   },
-  details: {
+  detalhe: {
     fontSize: 13,
-    color: "#6B7280",
+    color: "#666666",
   },
-  profileButton: {
+  botaoCoracao: {
+    alignSelf: "flex-start",
+    padding: 2,
+  },
+  botaoVer: {
     flexDirection: "row",
     alignItems: "center",
-    alignSelf: "flex-start",
-    marginTop: 4,
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#0F766E",
+    borderRadius: 10,
+    paddingVertical: 11,
   },
-  profileButtonText: {
+  botaoVerTexto: {
+    color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "600",
-    color: "#0F766E",
-    marginRight: 4,
   },
-  emptyContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 32,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: "#6B7280",
+  vazio: {
+    fontSize: 15,
+    color: "#666666",
     textAlign: "center",
-    marginTop: 12,
+    paddingTop: 40,
+    lineHeight: 22,
   },
 });

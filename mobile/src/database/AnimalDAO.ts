@@ -1,4 +1,3 @@
-
 import type { SQLiteDatabase } from 'expo-sqlite';
 import type { Animal } from '../models/types';
 
@@ -8,12 +7,13 @@ export async function inserirAnimal(
 ): Promise<number | null> {
   const result = await db.runAsync(
     `INSERT INTO animais
-     (nome, especie, idade, porte, sexo, descricao, foto_url, id_ong)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+     (nome, especie, idade, data_nascimento, porte, sexo, descricao, foto_url, id_ong)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       animal.nome,
       animal.especie,
       animal.idade,
+      animal.data_nascimento ?? null,
       animal.porte,
       animal.sexo,
       animal.descricao,
@@ -61,13 +61,14 @@ export async function atualizarAnimal(
 
   const result = await db.runAsync(
     `UPDATE animais
-     SET nome = ?, especie = ?, idade = ?, porte = ?,
+     SET nome = ?, especie = ?, idade = ?, data_nascimento = ?, porte = ?,
          sexo = ?, descricao = ?, foto_url = ?, id_ong = ?
      WHERE id = ?`,
     [
       animal.nome,
       animal.especie,
       animal.idade,
+      animal.data_nascimento ?? null,
       animal.porte,
       animal.sexo,
       animal.descricao,

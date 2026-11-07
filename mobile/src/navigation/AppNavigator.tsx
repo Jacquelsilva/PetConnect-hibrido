@@ -14,7 +14,16 @@ import { SettingsScreen } from "@/screens/SettingsScreen";
 import { PetDetailsScreen } from "@/screens/PetDetailsScreen";
 import { TelaFavoritos } from "@/screens/TelaFavoritos";
 import { TelaEditarPerfil } from "@/screens/TelaEditarPerfil";
+import { PrivacySecurityScreen } from "@/screens/PrivacySecurityScreen";
+import { PrivacyPolicyScreen } from "@/screens/Privacypolicy";
+import { TermsofuseScreen } from "@/screens/Termsofuse";
 import { getSession } from "@/services/auth";
+import { HelpSupportScreen } from "@/screens/HelpSupportScreen";
+import { AnimalRegistrationScreen } from "@/screens/AnimalRegistrationScreen";
+import { ManageAnimalsScreen } from "@/screens/ManageAnimalsScreen";
+import { EditAnimalScreen } from "@/screens/EditAnimalScreen";
+import { AnimalDetailsScreen } from "@/screens/AnimalDetailsScreen";
+import { SolicitarAdocaoScreen } from "@/screens/SolicitarAdocaoScreen";
 
 import type { RootStackParamList } from "@/types/navigation";
 
@@ -125,6 +134,37 @@ export function AppNavigator() {
           component={TelaEditarPerfil}
         />
 
+        {/* Privacidade e Segurança */}
+        <Stack.Screen
+          name="Privacyandsecurity"
+          component={PrivacySecurityScreen}
+        />
+
+        <Stack.Screen
+          name="PrivacyPolicy"
+          component={PrivacyPolicyScreen}
+        />
+
+        <Stack.Screen
+          name="Termsofuse"
+          component={TermsofuseScreen}
+        />
+
+        <Stack.Screen
+          name="Helpandsupport"
+          component={HelpSupportScreen}
+        />
+
+        <Stack.Screen name="manageanimals" component={ManageAnimalsScreen} />
+
+        <Stack.Screen name="animalregistration" component={AnimalRegistrationScreen} />
+
+        <Stack.Screen name="editanimal" component={EditAnimalScreen} />
+
+        <Stack.Screen name="animaldetails" component={AnimalDetailsScreen} />
+
+        <Stack.Screen name="solicitaradocao" component={SolicitarAdocaoScreen} />
+        
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 
 import {
   Text,
@@ -35,6 +35,26 @@ type Erros = Partial<
   >
 >;
 
+type RespostaViaCep = {
+  cep?: string;
+  logradouro?: string;
+  bairro?: string;
+  localidade?: string;
+  uf?: string;
+  erro?: boolean | string;
+};
+
+// Alert.alert não funciona na web, então usamos window.alert nesse caso
+function mostrarAviso(titulo: string, mensagem: string) {
+  if (Platform.OS === "web") {
+    if (typeof window !== "undefined") {
+      window.alert(`${titulo}\n\n${mensagem}`);
+    }
+  } else {
+    Alert.alert(titulo, mensagem);
+  }
+}
+
 export default function TelaCadastroUsuario({
   navigation,
 }: CadastroUsuarioProps) {
@@ -50,10 +70,91 @@ export default function TelaCadastroUsuario({
 
   const [erros, setErros] = useState<Erros>({});
   const [carregando, setCarregando] = useState(false);
+  const [buscandoCep, setBuscandoCep] = useState(false);
+
+  // guarda o último CEP consultado para não repetir a busca
+  const ultimoCepBuscado = useRef<string>("");
 
   const somenteDigitos = (valor: string): string => {
     return valor.replace(/\D/g, "");
   };
+
+  // Busca o endereço no ViaCEP
+  async function buscarEnderecoPorCep(cepDigitos: string) {
+    if (cepDigitos.length !== 8) return;
+    if (cepDigitos === ultimoCepBuscado.current) return;
+
+    ultimoCepBuscado.current = cepDigitos;
+    setBuscandoCep(true);
+
+    try {
+      console.log("BUSCANDO CEP:", cepDigitos);
+
+      const resposta = await fetch(
+        `https://viacep.com.br/ws/${cepDigitos}/json/`
+      );
+
+      if (!resposta.ok) {
+        throw new Error(`Status ${resposta.status}`);
+      }
+
+      const dados: RespostaViaCep = await resposta.json();
+      console.log("RESPOSTA VIACEP:", JSON.stringify(dados));
+
+      if (dados.erro) {
+        ultimoCepBuscado.current = "";
+        setErros((anterior) => ({
+          ...anterior,
+          cep: "CEP não encontrado. Confira o número digitado.",
+        }));
+        return;
+      }
+
+      setEstado(dados.uf || "");
+      setCidade(dados.localidade || "");
+
+      const partesEndereco = [dados.logradouro, dados.bairro].filter(
+        (parte): parte is string => !!parte && parte.trim() !== ""
+      );
+
+      // CEPs gerais de cidade pequena não têm rua: mantém o que já estava digitado
+      if (partesEndereco.length > 0) {
+        setEndereco(partesEndereco.join(", "));
+      }
+
+      // limpa os erros dos campos que acabaram de ser preenchidos
+      setErros((anterior) => ({
+        ...anterior,
+        cep: undefined,
+        estado: undefined,
+        cidade: undefined,
+        endereco: partesEndereco.length > 0 ? undefined : anterior.endereco,
+      }));
+    } catch (error) {
+      console.error("ERRO AO BUSCAR CEP:", error);
+      ultimoCepBuscado.current = "";
+      mostrarAviso(
+        "Erro",
+        "Não foi possível buscar o CEP. Verifique sua internet ou preencha o endereço manualmente."
+      );
+    } finally {
+      setBuscandoCep(false);
+    }
+  }
+
+  function handleMudarCep(valor: string) {
+    setCep(valor);
+
+    const digitos = somenteDigitos(valor);
+
+    // se o usuário apagou/editou o CEP, libera uma nova busca
+    if (digitos.length < 8) {
+      ultimoCepBuscado.current = "";
+      return;
+    }
+
+    buscarEnderecoPorCep(digitos);
+  }
 
   function validar(): boolean {
     const novosErros: Erros = {};
@@ -100,7 +201,7 @@ export default function TelaCadastroUsuario({
   }
 
   async function handleCadastrar() {
-    if (carregando) return;
+    if (carregando || buscandoCep) return;
 
     if (!validar()) return;
 
@@ -131,7 +232,7 @@ export default function TelaCadastroUsuario({
       console.log("4 - RESULTADO DA INSERÇÃO:", resultado);
 
       if (!resultado) {
-        Alert.alert(
+        mostrarAviso(
           "Erro no cadastro",
           "Não foi possível realizar o cadastro. Verifique se o e-mail já está cadastrado."
         );
@@ -145,10 +246,19 @@ export default function TelaCadastroUsuario({
         [novoUsuario.email]
       );
 
+      if (!usuarioCriado?.id) {
+        console.error("ERRO: usuário criado mas não encontrado no banco.");
+        mostrarAviso(
+          "Erro",
+          "Cadastro realizado, mas não foi possível iniciar a sessão. Faça login."
+        );
+        return;
+      }
+
       await saveSession({
         token: "registered-user-token-" + Date.now(),
         user: {
-          id: String(usuarioCriado?.id || "1"),
+          id: String(usuarioCriado.id),
           name: novoUsuario.nome,
           document: novoUsuario.cpf,
           email: novoUsuario.email,
@@ -157,15 +267,10 @@ export default function TelaCadastroUsuario({
       });
 
       navigation.replace("HomeUsuario");
-
     } catch (error) {
       console.error("ERRO AO CADASTRAR USUÁRIO:", error);
 
-      Alert.alert(
-        "Erro",
-        "Ocorreu um problema ao cadastrar o usuário."
-      );
-
+      mostrarAviso("Erro", "Ocorreu um problema ao cadastrar o usuário.");
     } finally {
       setCarregando(false);
     }
@@ -192,9 +297,7 @@ export default function TelaCadastroUsuario({
           value={nome}
           onChangeText={setNome}
         />
-        {erros.nome && (
-          <Text style={styles.error}>{erros.nome}</Text>
-        )}
+        {erros.nome && <Text style={styles.error}>{erros.nome}</Text>}
 
         <Input
           label="CPF"
@@ -205,9 +308,7 @@ export default function TelaCadastroUsuario({
           maxLength={14}
           mask="cpf"
         />
-        {erros.cpf && (
-          <Text style={styles.error}>{erros.cpf}</Text>
-        )}
+        {erros.cpf && <Text style={styles.error}>{erros.cpf}</Text>}
 
         <Input
           label="E-mail"
@@ -217,9 +318,7 @@ export default function TelaCadastroUsuario({
           keyboardType="email-address"
           autoCapitalize="none"
         />
-        {erros.email && (
-          <Text style={styles.error}>{erros.email}</Text>
-        )}
+        {erros.email && <Text style={styles.error}>{erros.email}</Text>}
 
         <Input
           label="Senha"
@@ -228,9 +327,7 @@ export default function TelaCadastroUsuario({
           onChangeText={setSenha}
           secureTextEntry
         />
-        {erros.senha && (
-          <Text style={styles.error}>{erros.senha}</Text>
-        )}
+        {erros.senha && <Text style={styles.error}>{erros.senha}</Text>}
 
         <Input
           label="Confirmar senha"
@@ -246,17 +343,15 @@ export default function TelaCadastroUsuario({
         <Text style={styles.section}>Endereço</Text>
 
         <Input
-          label="CEP"
+          label={buscandoCep ? "CEP (buscando endereço...)" : "CEP"}
           placeholder="00000-000"
           value={cep}
-          onChangeText={setCep}
+          onChangeText={handleMudarCep}
           keyboardType="numeric"
           maxLength={9}
           mask="cep"
         />
-        {erros.cep && (
-          <Text style={styles.error}>{erros.cep}</Text>
-        )}
+        {erros.cep && <Text style={styles.error}>{erros.cep}</Text>}
 
         <Input
           label="Estado"
@@ -266,9 +361,7 @@ export default function TelaCadastroUsuario({
           autoCapitalize="characters"
           maxLength={2}
         />
-        {erros.estado && (
-          <Text style={styles.error}>{erros.estado}</Text>
-        )}
+        {erros.estado && <Text style={styles.error}>{erros.estado}</Text>}
 
         <Input
           label="Cidade"
@@ -276,9 +369,7 @@ export default function TelaCadastroUsuario({
           value={cidade}
           onChangeText={setCidade}
         />
-        {erros.cidade && (
-          <Text style={styles.error}>{erros.cidade}</Text>
-        )}
+        {erros.cidade && <Text style={styles.error}>{erros.cidade}</Text>}
 
         <Input
           label="Endereço"
@@ -286,15 +377,13 @@ export default function TelaCadastroUsuario({
           value={endereco}
           onChangeText={setEndereco}
         />
-        {erros.endereco && (
-          <Text style={styles.error}>{erros.endereco}</Text>
-        )}
+        {erros.endereco && <Text style={styles.error}>{erros.endereco}</Text>}
 
         <Button
           title={carregando ? "Cadastrando..." : "Cadastrar Usuário"}
           variant="primary"
           onPress={handleCadastrar}
-          disabled={carregando}
+          disabled={carregando || buscandoCep}
         />
       </ScrollView>
     </KeyboardAvoidingView>

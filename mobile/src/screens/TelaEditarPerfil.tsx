@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Alert, Platform } from "react-native";
+import { View, StyleSheet, ScrollView, Alert, Platform } from "react-native";
 import { Header } from "@/components/ui/Header";
 import { InputGroup } from "@/components/ui/InputGroup";
 import { Button } from "@/components/ui/Button";
@@ -11,6 +11,22 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "@/types/navigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "EditarPerfil">;
+
+// Alert.alert não funciona na web, então usamos window.alert nesse caso
+function mostrarAviso(titulo: string, mensagem: string, aoFechar?: () => void) {
+  if (Platform.OS === "web") {
+    if (typeof window !== "undefined") {
+      window.alert(`${titulo}\n\n${mensagem}`);
+    }
+    aoFechar?.();
+  } else {
+    Alert.alert(
+      titulo,
+      mensagem,
+      aoFechar ? [{ text: "OK", onPress: aoFechar }] : undefined
+    );
+  }
+}
 
 export function TelaEditarPerfil({ navigation }: Props) {
   const [nome, setNome] = useState("");
@@ -24,19 +40,31 @@ export function TelaEditarPerfil({ navigation }: Props) {
   const [senha, setSenha] = useState("");
   const [userType, setUserType] = useState<"user" | "ong">("user");
   const [userId, setUserId] = useState<number | null>(null);
+  const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
     async function loadData() {
       try {
         const session = await getSession();
-        if (!session || !session.user?.id) return;
-        setUserId(Number(session.user.id));
+        console.log("SESSÃO NA EDIÇÃO:", JSON.stringify(session));
+
+        if (!session || !session.user?.id) {
+          console.error("EDIÇÃO: sessão sem usuário/ID.");
+          return;
+        }
+
+        const id = Number(session.user.id);
+        setUserId(id);
         setUserType(session.user.type);
 
         const db = await getDatabase();
+
         if (session.user.type === "ong") {
-          // fetch ong
-          const ongs = await db.getAllAsync<any>("SELECT * FROM ongs WHERE id = ?", [session.user.id]);
+          const ongs = await db.getAllAsync<any>(
+            "SELECT * FROM ongs WHERE id = ?",
+            [id]
+          );
+
           if (ongs && ongs.length > 0) {
             const ong = ongs[0];
             setNome(ong.nome || "");
@@ -48,9 +76,12 @@ export function TelaEditarPerfil({ navigation }: Props) {
             setCidade(ong.cidade || "");
             setEndereco(ong.endereco || "");
             setSenha(ong.senha || "");
+          } else {
+            console.error("EDIÇÃO: ONG não encontrada, id:", id);
           }
         } else {
-          const user = await buscarUsuarioPorId(db, Number(session.user.id));
+          const user = await buscarUsuarioPorId(db, id);
+
           if (user) {
             setNome(user.nome || "");
             setEmail(user.email || "");
@@ -60,29 +91,50 @@ export function TelaEditarPerfil({ navigation }: Props) {
             setCidade(user.cidade || "");
             setEndereco(user.endereco || "");
             setSenha(user.senha || "");
+          } else {
+            console.error("EDIÇÃO: usuário não encontrado, id:", id);
           }
         }
       } catch (e) {
         console.error("Erro ao carregar perfil para edição:", e);
       }
     }
+
     loadData();
   }, []);
 
   const handleSalvar = async () => {
-    if (!nome || !email || !cep) {
-      Alert.alert("Erro", "Preencha os campos obrigatórios.");
+    if (salvando) return;
+
+    console.log("CLICOU EM SALVAR");
+    console.log("userId:", userId, "| userType:", userType);
+
+    if (!nome.trim() || !email.trim() || !cep.trim()) {
+      mostrarAviso("Erro", "Preencha os campos obrigatórios (nome, e-mail e CEP).");
       return;
     }
 
+    if (userId === null || Number.isNaN(userId)) {
+      console.error("ERRO: userId inválido, não é possível salvar.");
+      mostrarAviso(
+        "Erro",
+        "Não foi possível identificar o usuário. Faça login novamente."
+      );
+      return;
+    }
+
+    setSalvando(true);
+
     try {
       const db = await getDatabase();
-      if (userType === "ong" && userId) {
-        const success = await atualizarOng(db, {
+      let success = false;
+
+      if (userType === "ong") {
+        success = await atualizarOng(db, {
           id: userId,
-          nome,
+          nome: nome.trim(),
           cnpj: documento,
-          email,
+          email: email.trim(),
           senha,
           cep,
           estado,
@@ -90,44 +142,48 @@ export function TelaEditarPerfil({ navigation }: Props) {
           endereco,
           telefone,
         });
-        if (success) {
-          await saveSession({
-            token: "active",
-            user: { id: String(userId), name: nome, email, type: "ong", document: documento }
-          });
-          Alert.alert("Sucesso", "Perfil atualizado com sucesso!", [
-            { text: "OK", onPress: () => navigation.goBack() },
-          ]);
-        } else {
-          Alert.alert("Erro", "Não foi possível atualizar o perfil.");
-        }
-      } else if (userId) {
-        const success = await atualizarUsuario(db, {
+      } else {
+        success = await atualizarUsuario(db, {
           id: userId,
-          nome,
+          nome: nome.trim(),
           cpf: documento,
-          email,
+          email: email.trim(),
           senha,
           cep,
           estado,
           cidade,
           endereco,
         });
-        if (success) {
-          await saveSession({
-            token: "active",
-            user: { id: String(userId), name: nome, email, type: "user", document: documento }
-          });
-          Alert.alert("Sucesso", "Perfil atualizado com sucesso!", [
-            { text: "OK", onPress: () => navigation.goBack() },
-          ]);
-        } else {
-          Alert.alert("Erro", "Não foi possível atualizar o perfil.");
-        }
+      }
+
+      console.log("RESULTADO DO UPDATE:", success);
+
+      if (success) {
+        await saveSession({
+          token: "active",
+          user: {
+            id: String(userId),
+            name: nome.trim(),
+            email: email.trim(),
+            type: userType,
+            document: documento,
+          },
+        });
+
+        mostrarAviso("Sucesso", "Perfil atualizado com sucesso!", () =>
+          navigation.goBack()
+        );
+      } else {
+        mostrarAviso(
+          "Erro",
+          "Não foi possível atualizar o perfil. O e-mail pode já estar em uso por outra conta."
+        );
       }
     } catch (e) {
       console.error("Erro ao salvar perfil:", e);
-      Alert.alert("Erro", "Ocorreu um erro ao salvar as alterações.");
+      mostrarAviso("Erro", "Ocorreu um erro ao salvar as alterações.");
+    } finally {
+      setSalvando(false);
     }
   };
 
@@ -195,7 +251,11 @@ export function TelaEditarPerfil({ navigation }: Props) {
             onChangeText={setEndereco}
           />
 
-          <Button title="Salvar Alterações" onPress={handleSalvar} style={styles.button} />
+          <Button
+            title={salvando ? "Salvando..." : "Salvar Alterações"}
+            onPress={handleSalvar}
+            style={styles.button}
+          />
         </View>
       </ScrollView>
     </View>

@@ -1,4 +1,3 @@
-
 export interface Usuario {
   id?: number;
   nome: string;
@@ -29,6 +28,7 @@ export interface Animal {
   nome: string;
   especie: string;
   idade: number;
+  data_nascimento?: string | null;
   porte: string;
   sexo: string;
   descricao: string;

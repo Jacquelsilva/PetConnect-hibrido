@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Alert, Pressable } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  Pressable,
+  Platform,
+} from "react-native";
 import { Header } from "@/components/ui/Header";
 import { Button } from "@/components/ui/Button";
 import { getSession, clearSession, AuthResponse } from "@/services/auth";
@@ -17,25 +25,43 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
     loadSession();
   }, []);
 
-  const handleLogout = async () => {
-    Alert.alert(
-      "Sair da Conta",
-      "Deseja realmente sair da sua conta?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Sair",
-          style: "destructive",
-          onPress: async () => {
-            await clearSession();
-            navigation.reset({
-              index: 0,
-              routes: [{ name: "Login" }],
-            });
-          },
-        },
-      ]
-    );
+  const performLogout = async () => {
+    try {
+      await clearSession();
+    } catch (e) {
+      console.log("Erro ao limpar sessão:", e);
+    }
+
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      try {
+        window.localStorage.clear();
+        window.sessionStorage.clear();
+      } catch (e) {
+        console.log("Erro ao limpar storage da web:", e);
+      }
+    }
+
+    setSession(null);
+
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "Login" }],
+    });
+  };
+
+  const handleLogout = () => {
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm("Deseja realmente sair da sua conta?");
+      if (confirmed) {
+        performLogout();
+      }
+      return;
+    }
+
+    Alert.alert("Sair da Conta", "Deseja realmente sair da sua conta?", [
+      { text: "Cancelar", style: "cancel" },
+      { text: "Sair", style: "destructive", onPress: performLogout },
+    ]);
   };
 
   return (
@@ -47,8 +73,12 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
             <Ionicons name="person-circle-outline" size={80} color="#4CAF50" />
           </View>
           <Text style={styles.name}>{session?.user?.name || "Usuário PetConnect"}</Text>
-          <Text style={styles.email}>{session?.user?.email || session?.user?.document || "Conectado"}</Text>
-          <Text style={styles.role}>Tipo: {session?.user?.type === "ong" ? "ONG" : "Tutor / Adotante"}</Text>
+          <Text style={styles.email}>
+            {session?.user?.email || session?.user?.document || "Conectado"}
+          </Text>
+          <Text style={styles.role}>
+            Tipo: {session?.user?.type === "ong" ? "ONG" : "Tutor / Adotante"}
+          </Text>
         </View>
 
         <View style={styles.menuSection}>
@@ -66,17 +96,17 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
               <Ionicons name="chevron-forward" size={20} color="#999" />
             </View>
             <View style={styles.divider} />
-            <View style={styles.row}>
+            <Pressable style={styles.row} onPress={() => navigation.navigate("Privacyandsecurity")}>
               <Ionicons name="shield-checkmark-outline" size={22} color="#555" />
               <Text style={styles.rowText}>Privacidade e Segurança</Text>
               <Ionicons name="chevron-forward" size={20} color="#999" />
-            </View>
+            </Pressable>
             <View style={styles.divider} />
-            <View style={styles.row}>
+            <Pressable style={styles.row} onPress={() => navigation.navigate("Helpandsupport")}>
               <Ionicons name="help-circle-outline" size={22} color="#555" />
               <Text style={styles.rowText}>Ajuda e Suporte</Text>
               <Ionicons name="chevron-forward" size={20} color="#999" />
-            </View>
+            </Pressable>
           </View>
         </View>
 
