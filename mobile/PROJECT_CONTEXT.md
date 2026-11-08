@@ -8,19 +8,34 @@ Este documento apresenta a arquitetura, estrutura de diretórios, rotas, serviç
 
 ```text
 mobile/
+├── .env.example                     # Exemplo de variáveis de ambiente (API URL e Google Client ID)
+├── .gitignore                       # Arquivos e pastas ignorados pelo Git
+├── AGENTS.md                        # Instruções e diretrizes de agentes
+├── app.json                         # Configuração do projeto Expo
+├── App.tsx                          # Ponto de entrada com AuthProvider e AppNavigator
+├── CLAUDE.md                        # Instruções para Claude
+├── GEMINI.md                        # Instruções e diretrizes do Gemini
+├── index.ts                         # Ponto de entrada do Expo
+├── LICENSE                          # Licença do projeto
+├── metro.config.js                  # Configuração do Metro Bundler
+├── package.json                     # Dependências e scripts
+├── PROJECT_CONTEXT.md               # Documentação e contexto do projeto
+├── tsconfig.json                    # Configuração TypeScript
 ├── assets/                          # Recursos estáticos (ícones, favicon, splash screen)
 ├── openspec/                        # Arquivos de especificação, propostas e mudanças OpenSpec
-├── src/
-│   ├── components/                  # Componentes de interface modulares
-│   │   └── ui/
-│   │       ├── Button.tsx           # Botão reutilizável com variantes (primary, secondary, google, outline)
-│   │       ├── Header.tsx           # Cabeçalho responsivo com botão de voltar e título
-│   │       ├── HeaderLogin.tsx      # Cabeçalho específico para telas de login/boas-vindas
-│   │       ├── Input.tsx            # Campo de texto base com suporte a máscaras e erros
-│   │       ├── InputGroup.tsx       # Grupo de input rotulado com suporte a máscaras (CPF, CNPJ, CEP, telefone)
-│   │       ├── OptionCard.tsx       # Card de escolha (ex.: perfil Tutor vs ONG)
-│   │       └── OrDivider.tsx        # Divisor visual com texto central ("ou")
-│   ├── database/                    # Camada de persistência local (SQLite)
+└── src/
+    ├── components/                  # Componentes de interface modulares
+    │   └── ui/
+    │       ├── Button.tsx           # Botão reutilizável com variantes (primary, secondary, google, outline)
+    │       ├── Header.tsx           # Cabeçalho responsivo com botão de voltar e título
+    │       ├── HeaderLogin.tsx      # Cabeçalho específico para telas de login/boas-vindas
+    │       ├── Input.tsx            # Campo de texto base com suporte a máscaras e erros
+    │       ├── InputGroup.tsx       # Grupo de input rotulado com suporte a máscaras (CPF, CNPJ, CEP, telefone)
+    │       ├── OptionCard.tsx       # Card de escolha (ex.: perfil Tutor vs ONG)
+    │       └── OrDivider.tsx        # Divisor visual com texto central ("ou")
+    ├── contexts/                    # Contextos globais da aplicação
+    │   └── AuthContext.tsx          # Gerenciamento global de autenticação, sessão e hook useAuth
+    ├── database/                    # Camada de persistência local (SQLite)
 │   │   ├── AnimalDAO.ts             # Operações de CRUD para animais
 │   │   ├── Database.ts              # Inicialização e conexão com o banco SQLite Expo
 │   │   ├── FavoritosDAO.ts          # Gerenciamento de animais favoritos do usuário
@@ -145,10 +160,21 @@ O aplicativo utiliza **`expo-sqlite`** para armazenamento local estruturado em t
 - Suporte a chamadas HTTP para API REST com fallback offline automático (`Network request failed` ativa perfis simulados para testes locais sem backend rodando).
 - Armazenamento em `@react-native-async-storage/async-storage` sob a chave `@PetConnect:auth_session`.
 
-### 4.4. Variáveis de Ambiente
+### 4.4. Variáveis de Ambiente (`.env.example`)
 Configuradas via Expo (padrão `EXPO_PUBLIC_`):
-- `EXPO_PUBLIC_API_URL`: URL base da API REST (padrão: `https://api.petconnect.com.br`).
+- `EXPO_PUBLIC_API_URL`: URL base da API REST do PetConnect (ex.: `https://api.petconnect.com.br`).
 - `EXPO_PUBLIC_GOOGLE_CLIENT_ID`: Client ID para autenticação Google OAuth.
+
+---
+
+## 5. Relatório de Diagnóstico, Consolidação e Auditoria (`.diagnostico-projeto.md`)
+
+O projeto passou por consolidação e auditoria completa cobrindo:
+1. **Consolidação de Telas**: Mesclagem das funcionalidades de `AnimalDetailsScreen` e `PetDetailsScreen` em um único arquivo definitivo (`PetDetailsScreen.tsx`), removendo arquivos redundantes e limpando rotas.
+2. **Padronização do Header (`Header.tsx`)**: Botão de voltar circular de 40x40px (`#E6F4EA`) com ícone verde (`#047857`), título centralizado e altura de 56px em todas as sub-telas.
+3. **Reatividade do AuthContext & Perfil**: Atualização instantânea de sessões e nomes de usuário nas Homes (`Olá, {user?.name}!`) e Settings via `useAuth()`.
+4. **Git Hygiene**: Arquivos de diagnóstico e commit ignorados via `.gitignore`.
+
 
 ---
 

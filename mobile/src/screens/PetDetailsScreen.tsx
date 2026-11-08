@@ -1,29 +1,75 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Image, Alert } from "react-native";
 import { Header } from "@/components/ui/Header";
 import { Button } from "@/components/ui/Button";
-import type { PetDetailsScreenProps } from "@/types/navigation";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "@/types/navigation";
 import { Ionicons } from "@expo/vector-icons";
+import { getDatabase } from "@/database/Database";
+import { buscarAnimal } from "@/database/AnimalDAO";
+import type { Animal } from "@/models/types";
 
-export function PetDetailsScreen({ navigation, route }: PetDetailsScreenProps) {
-  const pet = (route?.params as any)?.pet || {
-    nome: "Thor",
-    especie: "Cachorro",
-    idade: "2 anos",
-    porte: "Médio",
-    sexo: "Macho",
-    descricao: "Thor é um cãozinho muito alegre, brincalhão e cheio de energia. Adora correr no parque e se dá super bem com crianças e outros pets. Vacinado e castrado.",
-    ongNome: "ONG Amigo dos Bichos",
-    ongTelefone: "(11) 98765-4321",
-    foto: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80",
-  };
+type Props = NativeStackScreenProps<RootStackParamList, "PetDetails">;
+
+function textoIdade(idade: number): string {
+  if (idade === 0) return "Menos de 1 ano";
+  return idade === 1 ? "1 ano" : `${idade} anos`;
+}
+
+export function PetDetailsScreen({ navigation, route }: Props) {
+  const routeParams = (route?.params as any) || {};
+  const initialPet = routeParams.pet;
+  const petId = routeParams.id;
+
+  const [animal, setAnimal] = useState<Animal | null>(initialPet || null);
+  const [carregando, setCarregando] = useState<boolean>(!initialPet && !!petId);
+
+  useEffect(() => {
+    let ativo = true;
+    if (!initialPet && petId) {
+      (async () => {
+        try {
+          const db = await getDatabase();
+          const resultado = await buscarAnimal(db, Number(petId));
+          if (ativo) setAnimal(resultado);
+        } catch (e) {
+          console.error("Erro ao carregar detalhes do pet:", e);
+        } finally {
+          if (ativo) setCarregando(false);
+        }
+      })();
+    }
+    return () => {
+      ativo = false;
+    };
+  }, [petId, initialPet]);
+
+  const pet = animal
+    ? {
+        nome: animal.nome,
+        especie: animal.especie,
+        idade: textoIdade(animal.idade),
+        porte: animal.porte,
+        sexo: animal.sexo,
+        descricao: animal.descricao || "Sem descrição informada.",
+        ongNome: "ONG Parceira PetConnect",
+        ongTelefone: "(11) 99999-9999",
+        foto: animal.foto_url || "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80",
+      }
+    : routeParams.pet || {
+        nome: "Thor",
+        especie: "Cachorro",
+        idade: "2 anos",
+        porte: "Médio",
+        sexo: "Macho",
+        descricao: "Thor é um cãozinho muito alegre, brincalhão e cheio de energia.",
+        ongNome: "ONG Amigo dos Bichos",
+        ongTelefone: "(11) 98765-4321",
+        foto: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80",
+      };
 
   const handleSolicitacao = () => {
-    Alert.alert(
-      "Solicitação Enviada!",
-      `Sua solicitação de adoção para ${pet.nome} foi enviada com sucesso para ${pet.ongNome}. A ONG entrará em contato em breve!`,
-      [{ text: "OK", onPress: () => navigation.goBack() }]
-    );
+    navigation.navigate("solicitaradocao", { petId: petId || animal?.id });
   };
 
   return (
@@ -40,15 +86,15 @@ export function PetDetailsScreen({ navigation, route }: PetDetailsScreenProps) {
 
           <View style={styles.chipsRow}>
             <View style={styles.chip}>
-              <Ionicons name="time-outline" size={14} color="#4CAF50" />
+              <Ionicons name="time-outline" size={14} color="#047857" />
               <Text style={styles.chipText}>{pet.idade}</Text>
             </View>
             <View style={styles.chip}>
-              <Ionicons name="resize-outline" size={14} color="#4CAF50" />
+              <Ionicons name="resize-outline" size={14} color="#047857" />
               <Text style={styles.chipText}>{pet.porte}</Text>
             </View>
             <View style={styles.chip}>
-              <Ionicons name="male-female-outline" size={14} color="#4CAF50" />
+              <Ionicons name="male-female-outline" size={14} color="#047857" />
               <Text style={styles.chipText}>{pet.sexo}</Text>
             </View>
           </View>
@@ -59,7 +105,7 @@ export function PetDetailsScreen({ navigation, route }: PetDetailsScreenProps) {
           <Text style={styles.sectionTitle}>ONG Responsável</Text>
           <View style={styles.ongCard}>
             <View style={styles.ongInfo}>
-              <Ionicons name="business-outline" size={24} color="#4CAF50" />
+              <Ionicons name="business-outline" size={24} color="#047857" />
               <View style={styles.ongTextContainer}>
                 <Text style={styles.ongName}>{pet.ongNome}</Text>
                 <Text style={styles.ongPhone}>{pet.ongTelefone}</Text>
@@ -115,73 +161,75 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   petName: {
-    fontSize: 26,
-    fontWeight: "bold",
+    fontSize: 24,
+    fontWeight: "700",
     color: "#2C3E50",
   },
   species: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "600",
-    color: "#4CAF50",
-    backgroundColor: "rgba(76, 175, 80, 0.1)",
+    color: "#047857",
+    backgroundColor: "#E6F4EA",
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   chipsRow: {
     flexDirection: "row",
     marginBottom: 24,
+    gap: 12,
   },
   chip: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F1F8F5",
+    backgroundColor: "#F0FDF4",
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
-    marginRight: 10,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#DCFCE7",
   },
   chipText: {
-    fontSize: 13,
-    color: "#2C3E50",
+    fontSize: 14,
+    color: "#047857",
     marginLeft: 6,
     fontWeight: "500",
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
+    fontSize: 18,
+    fontWeight: "600",
     color: "#2C3E50",
     marginBottom: 8,
-    marginTop: 8,
+    marginTop: 16,
   },
   description: {
-    fontSize: 14,
+    fontSize: 15,
     color: "#555555",
     lineHeight: 22,
-    marginBottom: 20,
   },
   ongCard: {
     backgroundColor: "#F8F9FA",
     borderRadius: 12,
     padding: 16,
+    marginTop: 8,
     borderWidth: 1,
-    borderColor: "#EFEFEF",
+    borderColor: "#E5E7EB",
   },
   ongInfo: {
     flexDirection: "row",
     alignItems: "center",
   },
   ongTextContainer: {
-    marginLeft: 12,
+    marginLeft: 16,
   },
   ongName: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "600",
     color: "#2C3E50",
   },
   ongPhone: {
-    fontSize: 13,
-    color: "#7F8C8D",
+    fontSize: 14,
+    color: "#666666",
     marginTop: 2,
   },
   footer: {
@@ -192,6 +240,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: "#EFEFEF",
+    borderTopColor: "#E0E0E0",
+    alignItems: "center",
   },
 });

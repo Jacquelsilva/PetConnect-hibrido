@@ -2,6 +2,7 @@ import React, { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { HomeBase } from "@/screens/HomeBase";
 import { getSession } from "@/services/auth";
+import { useAuth } from "@/contexts/AuthContext";
 import { getDatabase } from "@/database/Database";
 import { listarAnimaisDaOng } from "@/database/AnimalDAO";
 import { contarSolicitacoesDaOng } from "@/database/SolicitacaoDAO";
@@ -11,6 +12,7 @@ import type { RootStackParamList } from "@/types/navigation";
 type Props = NativeStackScreenProps<RootStackParamList, "HomeOngs">;
 
 export function TelaHomeOngs({ navigation }: Props) {
+  const { user } = useAuth();
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState("todos");
 
@@ -140,7 +142,7 @@ export function TelaHomeOngs({ navigation }: Props) {
 
   return (
     <HomeBase
-      saudacao="Bem-vinda!"
+      saudacao={`Olá, ${user?.name || "ONG"}!`}
       titulo="Área da ONG"
       subtitulo="Gerencie seus animais e acompanhe as adoções."
       busca={busca}

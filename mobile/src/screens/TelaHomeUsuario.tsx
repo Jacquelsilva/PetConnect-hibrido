@@ -12,6 +12,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { getSession } from "@/services/auth";
+import { useAuth } from "@/contexts/AuthContext";
 import { getDatabase } from "@/database/Database";
 import { listarAnimais } from "@/database/AnimalDAO";
 import { listarIdsFavoritos, alternarFavorito } from "@/database/FavoritosDAO";
@@ -35,6 +36,7 @@ function textoIdade(idade: number): string {
 }
 
 export function TelaHomeUsuario({ navigation }: Props) {
+  const { user } = useAuth();
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState("todos");
   const [animais, setAnimais] = useState<Animal[]>([]);
@@ -178,7 +180,7 @@ export function TelaHomeUsuario({ navigation }: Props) {
 
   const cabecalho = (
     <View>
-      <Text style={styles.saudacao}>Olá!</Text>
+      <Text style={styles.saudacao}>Olá, {user?.name || "Usuário"}!</Text>
       <Text style={styles.titulo}>Encontre seu novo amigo</Text>
       <Text style={styles.subtitulo}>
         Um novo companheiro pode estar esperando por você.

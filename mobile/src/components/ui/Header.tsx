@@ -19,7 +19,7 @@ export function Header({ title, onBackPress, rightAction }: HeaderProps) {
             accessibilityRole="button"
             accessibilityLabel="Voltar"
           >
-            <Ionicons name="arrow-back" size={24} color="#2C3E50" />
+            <Ionicons name="arrow-back" size={22} color="#047857" />
           </Pressable>
         )}
       </View>
@@ -46,20 +46,24 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   leftContainer: {
-    width: 40,
+    width: 44,
     alignItems: "flex-start",
   },
   rightContainer: {
-    width: 40,
+    width: 44,
     alignItems: "flex-end",
   },
   backButton: {
-    padding: 4,
+    width: 40,
+    height: 40,
     borderRadius: 20,
+    backgroundColor: "#E6F4EA",
+    alignItems: "center",
+    justifyContent: "center",
   },
   pressed: {
-    opacity: 0.7,
-    backgroundColor: "rgba(0, 0, 0, 0.05)",
+    opacity: 0.8,
+    backgroundColor: "#D1E7DD",
   },
   title: {
     flex: 1,

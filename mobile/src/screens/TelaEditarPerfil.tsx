@@ -4,6 +4,7 @@ import { Header } from "@/components/ui/Header";
 import { InputGroup } from "@/components/ui/InputGroup";
 import { Button } from "@/components/ui/Button";
 import { getSession, saveSession } from "@/services/auth";
+import { useAuth } from "@/contexts/AuthContext";
 import { getDatabase } from "@/database/Database";
 import { buscarUsuarioPorId, atualizarUsuario } from "@/database/UsuarioDAO";
 import { atualizarOng } from "@/database/OngDAO";
@@ -29,6 +30,7 @@ function mostrarAviso(titulo: string, mensagem: string, aoFechar?: () => void) {
 }
 
 export function TelaEditarPerfil({ navigation }: Props) {
+  const { updateUser } = useAuth();
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [documento, setDocumento] = useState("");
@@ -168,6 +170,12 @@ export function TelaEditarPerfil({ navigation }: Props) {
             type: userType,
             document: documento,
           },
+        });
+
+        updateUser({
+          name: nome.trim(),
+          email: email.trim(),
+          document: documento,
         });
 
         mostrarAviso("Sucesso", "Perfil atualizado com sucesso!", () =>

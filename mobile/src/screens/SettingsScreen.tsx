@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,27 +7,21 @@ import {
   Alert,
   Pressable,
   Platform,
+  Switch,
 } from "react-native";
 import { Header } from "@/components/ui/Header";
 import { Button } from "@/components/ui/Button";
-import { getSession, clearSession, AuthResponse } from "@/services/auth";
+import { useAuth } from "@/contexts/AuthContext";
 import type { SettingsScreenProps } from "@/types/navigation";
 import { Ionicons } from "@expo/vector-icons";
 
 export function SettingsScreen({ navigation }: SettingsScreenProps) {
-  const [session, setSession] = useState<AuthResponse | null>(null);
-
-  useEffect(() => {
-    async function loadSession() {
-      const current = await getSession();
-      setSession(current);
-    }
-    loadSession();
-  }, []);
+  const { user, logout } = useAuth();
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   const performLogout = async () => {
     try {
-      await clearSession();
+      await logout();
     } catch (e) {
       console.log("Erro ao limpar sessão:", e);
     }
@@ -40,8 +34,6 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
         console.log("Erro ao limpar storage da web:", e);
       }
     }
-
-    setSession(null);
 
     navigation.reset({
       index: 0,
@@ -72,12 +64,12 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
           <View style={styles.avatarContainer}>
             <Ionicons name="person-circle-outline" size={80} color="#4CAF50" />
           </View>
-          <Text style={styles.name}>{session?.user?.name || "Usuário PetConnect"}</Text>
+          <Text style={styles.name}>{user?.name || "Usuário PetConnect"}</Text>
           <Text style={styles.email}>
-            {session?.user?.email || session?.user?.document || "Conectado"}
+            {user?.email || user?.document || "Conectado"}
           </Text>
           <Text style={styles.role}>
-            Tipo: {session?.user?.type === "ong" ? "ONG" : "Tutor / Adotante"}
+            Tipo: {user?.type === "ong" ? "ONG" : "Tutor / Adotante"}
           </Text>
         </View>
 
@@ -93,7 +85,12 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
             <View style={styles.row}>
               <Ionicons name="notifications-outline" size={22} color="#555" />
               <Text style={styles.rowText}>Notificações</Text>
-              <Ionicons name="chevron-forward" size={20} color="#999" />
+              <Switch
+                value={notificationsEnabled}
+                onValueChange={setNotificationsEnabled}
+                trackColor={{ false: "#D1D5DB", color: "#4CAF50" }}
+                thumbColor="#FFFFFF"
+              />
             </View>
             <View style={styles.divider} />
             <Pressable style={styles.row} onPress={() => navigation.navigate("Privacyandsecurity")}>
@@ -151,20 +148,22 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontWeight: "700",
     color: "#2C3E50",
     marginBottom: 4,
+    textAlign: "center",
   },
   email: {
     fontSize: 14,
-    color: "#7F8C8D",
+    color: "#666",
     marginBottom: 8,
+    textAlign: "center",
   },
   role: {
     fontSize: 12,
     color: "#4CAF50",
     fontWeight: "600",
-    backgroundColor: "rgba(76, 175, 80, 0.1)",
+    backgroundColor: "#E8F5E9",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -181,7 +180,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    paddingHorizontal: 16,
+    overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -192,22 +191,25 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 16,
-    justifyContent: "space-between",
+    paddingHorizontal: 20,
   },
   rowText: {
     flex: 1,
-    fontSize: 16,
-    color: "#333333",
-    marginLeft: 12,
+    fontSize: 15,
+    color: "#333",
+    marginLeft: 16,
   },
   divider: {
     height: 1,
-    backgroundColor: "#EFEFEF",
+    backgroundColor: "#F0F0F0",
+    marginLeft: 58,
   },
   logoutContainer: {
-    marginTop: 8,
+    alignItems: "center",
+    marginBottom: 32,
   },
   logoutButton: {
-    borderColor: "#D32F2F",
+    width: "100%",
+    borderColor: "#E53935",
   },
 });

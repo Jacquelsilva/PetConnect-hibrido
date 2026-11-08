@@ -22,7 +22,6 @@ import { HelpSupportScreen } from "@/screens/HelpSupportScreen";
 import { AnimalRegistrationScreen } from "@/screens/AnimalRegistrationScreen";
 import { ManageAnimalsScreen } from "@/screens/ManageAnimalsScreen";
 import { EditAnimalScreen } from "@/screens/EditAnimalScreen";
-import { AnimalDetailsScreen } from "@/screens/AnimalDetailsScreen";
 import { SolicitarAdocaoScreen } from "@/screens/SolicitarAdocaoScreen";
 
 import type { RootStackParamList } from "@/types/navigation";
@@ -161,7 +160,7 @@ export function AppNavigator() {
 
         <Stack.Screen name="editanimal" component={EditAnimalScreen} />
 
-        <Stack.Screen name="animaldetails" component={AnimalDetailsScreen} />
+        <Stack.Screen name="animaldetails" component={PetDetailsScreen} />
 
         <Stack.Screen name="solicitaradocao" component={SolicitarAdocaoScreen} />
         
