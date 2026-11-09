@@ -8,6 +8,9 @@ import {
   loginUser,
   loginWithGoogle,
 } from "@/services/auth";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, onSnapshot } from "firebase/firestore";
+import { auth, db } from "@/services/firebase";
 
 interface AuthContextData {
   user: AuthResponse["user"] | null;
@@ -42,7 +45,55 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     loadStoredSession();
+
+    // Listen to Firebase Auth state changes
+    const unsubscribeAuth = onAuthStateChanged(auth, async (fbUser) => {
+      if (fbUser) {
+        try {
+          const tokenVal = await fbUser.getIdToken();
+          setToken(tokenVal);
+        } catch (e) {
+          console.error("Erro ao obter ID token do Firebase:", e);
+        }
+      }
+    });
+
+    return () => {
+      unsubscribeAuth();
+    };
   }, []);
+
+  // Firestore real-time listener for user profile updates
+  useEffect(() => {
+    if (!auth.currentUser) return;
+    const userUid = auth.currentUser.uid;
+    const userDocRef = doc(db, "users", userUid);
+
+    const unsubscribeSnapshot = onSnapshot(userDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setUser((prev) => {
+          if (!prev) return null;
+          const updated = {
+            ...prev,
+            name: data.name || prev.name,
+            email: data.email || prev.email,
+            document: data.document || data.cpf || data.cnpj || prev.document,
+            photoUrl: data.photoUrl || data.foto || prev.photoUrl,
+            whatsapp: data.whatsapp || data.phone || prev.whatsapp,
+          };
+          saveSession({ token: token || "", user: updated });
+          return updated;
+        });
+      }
+    }, (error) => {
+      console.warn("Erro no listener Firestore do usuário:", error);
+    });
+
+    return () => {
+      unsubscribeSnapshot();
+    };
+  }, [auth.currentUser?.uid]);
 
   const login = async (credentials: LoginCredentials) => {
     setIsLoading(true);

@@ -22,27 +22,41 @@ export function PetDetailsScreen({ navigation, route }: Props) {
   const petId = routeParams.id;
 
   const [animal, setAnimal] = useState<Animal | null>(initialPet || null);
+  const [ongNome, setOngNome] = useState<string>("ONG Parceira PetConnect");
+  const [ongTelefone, setOngTelefone] = useState<string>("(11) 99999-9999");
   const [carregando, setCarregando] = useState<boolean>(!initialPet && !!petId);
 
   useEffect(() => {
     let ativo = true;
-    if (!initialPet && petId) {
-      (async () => {
-        try {
-          const db = await getDatabase();
-          const resultado = await buscarAnimal(db, Number(petId));
-          if (ativo) setAnimal(resultado);
-        } catch (e) {
-          console.error("Erro ao carregar detalhes do pet:", e);
-        } finally {
-          if (ativo) setCarregando(false);
+    (async () => {
+      try {
+        const db = await getDatabase();
+        let targetAnimal = animal;
+        if (!targetAnimal && petId) {
+          targetAnimal = await buscarAnimal(db, Number(petId));
+          if (ativo && targetAnimal) setAnimal(targetAnimal);
         }
-      })();
-    }
+
+        if (targetAnimal?.id_ong) {
+          const ong = await db.getFirstAsync<{ nome: string; telefone: string }>(
+            "SELECT nome, telefone FROM ongs WHERE id = ?",
+            [targetAnimal.id_ong]
+          );
+          if (ong && ativo) {
+            if (ong.nome) setOngNome(ong.nome);
+            if (ong.telefone) setOngTelefone(ong.telefone);
+          }
+        }
+      } catch (e) {
+        console.error("Erro ao carregar detalhes do pet ou ONG:", e);
+      } finally {
+        if (ativo) setCarregando(false);
+      }
+    })();
     return () => {
       ativo = false;
     };
-  }, [petId, initialPet]);
+  }, [petId]);
 
   const pet = animal
     ? {
@@ -52,8 +66,8 @@ export function PetDetailsScreen({ navigation, route }: Props) {
         porte: animal.porte,
         sexo: animal.sexo,
         descricao: animal.descricao || "Sem descrição informada.",
-        ongNome: "ONG Parceira PetConnect",
-        ongTelefone: "(11) 99999-9999",
+        ongNome,
+        ongTelefone,
         foto: animal.foto_url || "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80",
       }
     : routeParams.pet || {
@@ -129,18 +143,15 @@ export function PetDetailsScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: "#F9FAFB",
   },
   scroll: {
-    paddingBottom: 100,
-    maxWidth: 720,
-    alignSelf: "center",
-    width: "100%",
+    paddingBottom: 32,
   },
   image: {
     width: "100%",
-    height: 320,
-    backgroundColor: "#E0E0E0",
+    height: 300,
+    backgroundColor: "#E5E7EB",
   },
   card: {
     backgroundColor: "#FFFFFF",
@@ -150,7 +161,7 @@ const styles = StyleSheet.create({
     padding: 24,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
   },
@@ -162,85 +173,80 @@ const styles = StyleSheet.create({
   },
   petName: {
     fontSize: 24,
-    fontWeight: "700",
-    color: "#2C3E50",
+    fontWeight: "bold",
+    color: "#111827",
+    flex: 1,
   },
   species: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
-    color: "#047857",
-    backgroundColor: "#E6F4EA",
+    color: "#059669",
+    backgroundColor: "#ECFDF5",
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
   },
   chipsRow: {
     flexDirection: "row",
-    marginBottom: 24,
     gap: 12,
+    marginBottom: 24,
   },
   chip: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F0FDF4",
+    backgroundColor: "#F3F4F6",
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#DCFCE7",
+    borderRadius: 8,
+    gap: 6,
   },
   chipText: {
     fontSize: 14,
-    color: "#047857",
-    marginLeft: 6,
+    color: "#374151",
     fontWeight: "500",
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#2C3E50",
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#111827",
     marginBottom: 8,
     marginTop: 16,
   },
   description: {
-    fontSize: 15,
-    color: "#555555",
+    fontSize: 14,
+    color: "#4B5563",
     lineHeight: 22,
   },
   ongCard: {
-    backgroundColor: "#F8F9FA",
+    backgroundColor: "#F9FAFB",
     borderRadius: 12,
     padding: 16,
-    marginTop: 8,
     borderWidth: 1,
     borderColor: "#E5E7EB",
+    marginTop: 8,
   },
   ongInfo: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 16,
   },
   ongTextContainer: {
-    marginLeft: 16,
+    flex: 1,
   },
   ongName: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#2C3E50",
+    fontWeight: "bold",
+    color: "#111827",
   },
   ongPhone: {
     fontSize: 14,
-    color: "#666666",
+    color: "#6B7280",
     marginTop: 2,
   },
   footer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "#FFFFFF",
     padding: 16,
+    backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
-    borderTopColor: "#E0E0E0",
-    alignItems: "center",
+    borderTopColor: "#E5E7EB",
   },
 });

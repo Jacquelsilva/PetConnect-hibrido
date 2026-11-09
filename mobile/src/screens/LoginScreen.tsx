@@ -13,6 +13,7 @@ import { HeaderLogin } from "@/components/ui/HeaderLogin";
 import { InputGroup } from "@/components/ui/InputGroup";
 import { Button } from "@/components/ui/Button";
 import { OrDivider } from "@/components/ui/OrDivider";
+import { MainLayout } from "@/components/ui/MainLayout";
 import { loginUser, loginWithGoogle } from "@/services/auth";
 import type { LoginScreenProps } from "@/types/navigation";
 
@@ -86,116 +87,95 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.card}>
-          <HeaderLogin
-            title="Bem-vindo de volta!"
-            subtitle="Faça login para continuar encontrando seu novo melhor amigo."
+    <MainLayout variant="form" showNavBar={false}>
+      <View style={styles.card}>
+        <HeaderLogin
+          title="Bem-vindo de volta!"
+          subtitle="Faça login para continuar encontrando seu novo melhor amigo."
+        />
+
+        <View style={styles.formContainer}>
+          <Button
+            title={googleLoading ? "Conectando..." : "Continuar com o Google"}
+            variant="google"
+            icon={<Ionicons name="logo-google" size={20} color="#DB4437" />}
+            onPress={handleGoogleLogin}
+            disabled={googleLoading}
+            style={styles.googleButton}
           />
 
-          <View style={styles.formContainer}>
-            <Button
-              title={googleLoading ? "Conectando..." : "Continuar com o Google"}
-              variant="google"
-              icon={<Ionicons name="logo-google" size={20} color="#DB4437" />}
-              onPress={handleGoogleLogin}
-              disabled={googleLoading}
-              style={styles.googleButton}
-            />
+          <OrDivider text="ou" />
 
-            <OrDivider text="ou" />
+          <InputGroup
+            label="CPF ou CNPJ"
+            placeholder="Digite seu CPF ou CNPJ"
+            keyboardType="numeric"
+            value={document}
+            onChangeText={setDocument}
+            errorMessage={documentError}
+            mask="cpf_cnpj"
+            maxLength={18}
+          />
 
-            <InputGroup
-              label="CPF ou CNPJ"
-              placeholder="Digite seu CPF ou CNPJ"
-              keyboardType="numeric"
-              value={document}
-              onChangeText={setDocument}
-              errorMessage={documentError}
-              mask="cpf_cnpj"
-              maxLength={18}
-            />
+          <InputGroup
+            label="Senha"
+            placeholder="Digite sua senha"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+            errorMessage={passwordError}
+          />
 
-            <InputGroup
-              label="Senha"
-              placeholder="Digite sua senha"
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-              errorMessage={passwordError}
-            />
+          <Button
+            title={loading ? "Entrando..." : "Entrar com CPF/CNPJ"}
+            variant="primary"
+            onPress={handleLogin}
+            disabled={loading}
+            style={styles.loginButton}
+          />
 
-            <Button
-              title={loading ? "Entrando..." : "Entrar com CPF/CNPJ"}
-              variant="primary"
-              onPress={handleLogin}
-              disabled={loading}
-              style={styles.loginButton}
-            />
+          <OrDivider text="ou" />
 
-            <OrDivider text="ou" />
+          <Button
+            title="Cadastrar como Usuário"
+            variant="outline"
+            onPress={() => navigation.navigate("CadastroUsuario")}
+            style={styles.actionButton}
+          />
 
-            <Button
-              title="Cadastrar como Usuário"
-              variant="outline"
-              onPress={() => navigation.navigate("CadastroUsuario")}
-              style={styles.actionButton}
-            />
-
-            <Button
-              title="Cadastrar como ONG"
-              variant="secondary"
-              onPress={() => navigation.navigate("CadastroOng")}
-              style={styles.actionButton}
-            />
-          </View>
+          <Button
+            title="Cadastrar como ONG"
+            variant="outline"
+            onPress={() => navigation.navigate("CadastroOng")}
+            style={styles.actionButton}
+          />
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </View>
+    </MainLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F8F9FA",
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-  },
   card: {
-    width: "100%",
-    maxWidth: 480,
-    alignSelf: "center",
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 24,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
-    borderWidth: Platform.OS === "web" ? 1 : 0,
-    borderColor: "#EFEFEF",
+    shadowRadius: 8,
+    elevation: 4,
+    marginVertical: 16,
   },
   formContainer: {
-    width: "100%",
+    marginTop: 20,
   },
   googleButton: {
-    marginBottom: 4,
+    marginBottom: 16,
   },
   loginButton: {
-    marginTop: 8,
+    marginTop: 16,
+    marginBottom: 16,
   },
   actionButton: {
     marginTop: 12,

@@ -1,7 +1,18 @@
 import * as WebBrowser from "expo-web-browser";
 import * as AuthSession from "expo-auth-session";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
+import { Platform } from "react-native";
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  signOut,
+  onAuthStateChanged,
+  User as FirebaseUser
+} from "firebase/auth";
+import { doc, getDoc, setDoc, onSnapshot, updateDoc } from "firebase/firestore";
+import { auth, db } from "./firebase";
 import { getDatabase } from "@/database/Database";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -11,7 +22,7 @@ const AUTH_STORAGE_KEY = "@PetConnect:auth_session";
 const PRIVACY_FALLBACK_PREFIX = "@PetConnect:privacy:";
 
 export interface LoginCredentials {
-  document: string; // CPF or CNPJ
+  document: string; // CPF, CNPJ or Email
   password: string;
 }
 
@@ -23,6 +34,9 @@ export interface AuthResponse {
     document?: string;
     email?: string;
     type: "user" | "ong";
+    photoUrl?: string;
+    whatsapp?: string;
+    needsProfileCompletion?: boolean;
   };
 }
 
@@ -47,26 +61,76 @@ export async function getSession(): Promise<AuthResponse | null> {
 
 export async function clearSession(): Promise<void> {
   try {
+    if (auth.currentUser) {
+      await signOut(auth);
+    }
     await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
   } catch (error) {
     console.error("Erro ao limpar sessão do AsyncStorage:", error);
   }
 }
 
+<<<<<<< HEAD
+=======
+// Firebase & Local Hybrid Login
+>>>>>>> 1fae836 (feat(layout): refine MainLayout navigation visibility and Google OAuth flow)
 export async function loginUser(
   credentials: LoginCredentials
 ): Promise<AuthResponse> {
-  const documento = credentials.document.replace(/\D/g, "");
+  const identifier = credentials.document.trim();
   const senha = credentials.password;
 
-  if (!documento || !senha) {
-    throw new Error("Informe o CPF/CNPJ e a senha.");
+  if (!identifier || !senha) {
+    throw new Error("Informe o e-mail/CPF/CNPJ e a senha.");
   }
 
-  const db = await getDatabase();
+  // If identifier is an email, try Firebase Auth first
+  if (identifier.includes("@")) {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, identifier, senha);
+      const fbUser = userCredential.user;
+      const token = await fbUser.getIdToken();
+
+      // Fetch user profile from Firestore
+      const userDocRef = doc(db, "users", fbUser.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      let userData: AuthResponse["user"] = {
+        id: fbUser.uid,
+        name: fbUser.displayName || "Usuário PetConnect",
+        email: fbUser.email || identifier,
+        type: "user",
+      };
+
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        userData = {
+          id: fbUser.uid,
+          name: data.name || data.nome || fbUser.displayName || "Usuário PetConnect",
+          email: data.email || fbUser.email || identifier,
+          document: data.document || data.cpf || data.cnpj,
+          type: data.type === "ONG" || data.type === "ong" ? "ong" : "user",
+          photoUrl: data.photoUrl || data.foto,
+          whatsapp: data.whatsapp || data.phone || data.telefone,
+        };
+      } else {
+        userData.needsProfileCompletion = true;
+      }
+
+      const session: AuthResponse = { token, user: userData };
+      await saveSession(session);
+      return session;
+    } catch (firebaseError: any) {
+      console.warn("Firebase login failed, trying local SQLite fallback:", firebaseError?.message);
+    }
+  }
+
+  // Fallback / Local SQLite login (CPF / CNPJ)
+  const documento = identifier.replace(/\D/g, "");
+  const dbSqlite = await getDatabase();
 
   if (documento.length === 14) {
-    const ong = await db.getFirstAsync<{
+    const ong = await dbSqlite.getFirstAsync<{
       id: number;
       nome: string;
       cnpj: string;
@@ -95,7 +159,7 @@ export async function loginUser(
     return session;
   }
 
-  const usuario = await db.getFirstAsync<{
+  const usuario = await dbSqlite.getFirstAsync<{
     id: number;
     nome: string;
     cpf: string;
@@ -125,66 +189,46 @@ export async function loginUser(
 }
 
 export async function loginWithGoogle(): Promise<AuthResponse> {
-  const clientId =
-    process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ||
-    "mock-google-client-id.apps.googleusercontent.com";
-  const apiUrl =
-    process.env.EXPO_PUBLIC_API_URL || "https://api.petconnect.com.br";
-
   try {
-    const redirectUri = AuthSession.makeRedirectUri({
-      scheme: "petconnect",
-    });
+    if (Platform.OS === "web") {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const fbUser = result.user;
+      const token = await fbUser.getIdToken();
 
-    const discovery = await AuthSession.fetchDiscoveryAsync(
-      "https://accounts.google.com"
-    );
+      const userDocRef = doc(db, "users", fbUser.uid);
+      const userDoc = await getDoc(userDocRef);
 
-    const request = new AuthSession.AuthRequest({
-      clientId,
-      scopes: ["profile", "email"],
-      redirectUri,
-    });
+      let userData: AuthResponse["user"] = {
+        id: fbUser.uid,
+        name: fbUser.displayName || "Google User",
+        email: fbUser.email || "",
+        type: "user",
+        photoUrl: fbUser.photoURL || undefined,
+      };
 
-    const result = await request.promptAsync(discovery);
-
-    let session: AuthResponse;
-
-    if (result.type === "success" && result.params?.access_token) {
-      const token = result.params.access_token;
-
-      const apiResponse = await fetch(`${apiUrl}/auth/google`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ token }),
-      });
-
-      if (!apiResponse.ok) {
-        throw new Error("Falha na autenticação com o Google no servidor.");
+      if (!userDoc.exists()) {
+        userData.needsProfileCompletion = true;
+        await setDoc(userDocRef, {
+          name: userData.name,
+          email: userData.email,
+          type: "user",
+          photoUrl: userData.photoUrl,
+          createdAt: new Date().toISOString(),
+        });
+      } else {
+        const data = userDoc.data();
+        userData.name = data.name || data.nome || userData.name;
+        userData.type = data.type === "ONG" || data.type === "ong" ? "ong" : "user";
+        userData.photoUrl = data.photoUrl || data.foto || userData.photoUrl;
       }
 
-      session = await apiResponse.json();
-    } else {
-      console.warn(
-        "Google auth session not completed or dismissed, using fallback Google login."
-      );
-      session = {
-        token: "mock-google-jwt-token-98765",
-        user: {
-          id: "google-user-1",
-          name: "Google User",
-          email: "user@gmail.com",
-          type: "user",
-        },
-      };
+      const session: AuthResponse = { token, user: userData };
+      await saveSession(session);
+      return session;
     }
 
-    await saveSession(session);
-    return session;
-  } catch (error: any) {
-    console.warn("Google login fallback triggered due to:", error?.message);
+    // Native Google Auth fallback
     const fallbackSession: AuthResponse = {
       token: "mock-google-jwt-token-98765",
       user: {
@@ -192,11 +236,58 @@ export async function loginWithGoogle(): Promise<AuthResponse> {
         name: "Google User",
         email: "user@gmail.com",
         type: "user",
+        needsProfileCompletion: true,
+      },
+    };
+    await saveSession(fallbackSession);
+    return fallbackSession;
+  } catch (error: any) {
+    console.warn("Google login error:", error?.message);
+    const fallbackSession: AuthResponse = {
+      token: "mock-google-jwt-token-98765",
+      user: {
+        id: "google-user-1",
+        name: "Google User",
+        email: "user@gmail.com",
+        type: "user",
+        needsProfileCompletion: true,
       },
     };
     await saveSession(fallbackSession);
     return fallbackSession;
   }
+}
+
+export async function registerWithFirebase(
+  email: string,
+  pass: string,
+  name: string,
+  document: string,
+  type: "user" | "ong",
+  whatsapp?: string
+): Promise<AuthResponse> {
+  const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+  const fbUser = userCredential.user;
+  const token = await fbUser.getIdToken();
+
+  const userData: AuthResponse["user"] = {
+    id: fbUser.uid,
+    name,
+    email,
+    document,
+    type,
+    whatsapp,
+  };
+
+  const userDocRef = doc(db, "users", fbUser.uid);
+  await setDoc(userDocRef, {
+    ...userData,
+    createdAt: new Date().toISOString(),
+  });
+
+  const session: AuthResponse = { token, user: userData };
+  await saveSession(session);
+  return session;
 }
 
 function isMockToken(token?: string): boolean {
@@ -221,11 +312,11 @@ export async function changePassword(
   }
 
   if (isLocalToken(session.token)) {
-    const db = await getDatabase();
+    const dbSqlite = await getDatabase();
     const tabela = session.user.type === "ong" ? "ongs" : "usuarios";
     const id = Number(session.user.id);
 
-    const existe = await db.getFirstAsync<{ id: number }>(
+    const existe = await dbSqlite.getFirstAsync<{ id: number }>(
       `SELECT id FROM ${tabela} WHERE id = ? AND senha = ?`,
       [id, currentPassword]
     );
@@ -234,28 +325,11 @@ export async function changePassword(
       throw new Error("A senha atual está incorreta.");
     }
 
-    await db.runAsync(`UPDATE ${tabela} SET senha = ? WHERE id = ?`, [
+    await dbSqlite.runAsync(`UPDATE ${tabela} SET senha = ? WHERE id = ?`, [
       newPassword,
       id,
     ]);
     return;
-  }
-
-  const apiUrl =
-    process.env.EXPO_PUBLIC_API_URL || "https://api.petconnect.com.br";
-
-  const response = await fetch(`${apiUrl}/auth/change-password`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${session.token}`,
-    },
-    body: JSON.stringify({ currentPassword, newPassword }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || "Não foi possível alterar a senha.");
   }
 }
 
@@ -319,11 +393,15 @@ export async function deleteAccount(): Promise<void> {
     return;
   }
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 1fae836 (feat(layout): refine MainLayout navigation visibility and Google OAuth flow)
   if (isLocalToken(session.token)) {
-    const db = await getDatabase();
+    const dbSqlite = await getDatabase();
     const id = Number(session.user.id);
 
+<<<<<<< HEAD
     // As tabelas precisam existir antes da transação
     await db.execAsync(`
       CREATE TABLE IF NOT EXISTS privacidade (
@@ -353,23 +431,25 @@ export async function deleteAccount(): Promise<void> {
         [session.user.type, id]
       );
 
+=======
+    await dbSqlite.withTransactionAsync(async () => {
+>>>>>>> 1fae836 (feat(layout): refine MainLayout navigation visibility and Google OAuth flow)
       if (session.user.type === "ong") {
         const animaisDaOng = `SELECT CAST(id AS TEXT) FROM animais WHERE id_ong = ?`;
-
-        await db.runAsync(
+        await dbSqlite.runAsync(
           `DELETE FROM favoritos WHERE id_animal IN (${animaisDaOng})`,
           [id]
         );
-        await db.runAsync(
+        await dbSqlite.runAsync(
           `DELETE FROM solicitacoes WHERE id_animal IN (${animaisDaOng})`,
           [id]
         );
-        await db.runAsync("DELETE FROM animais WHERE id_ong = ?", [id]);
-        await db.runAsync("DELETE FROM ongs WHERE id = ?", [id]);
+        await dbSqlite.runAsync("DELETE FROM animais WHERE id_ong = ?", [id]);
+        await dbSqlite.runAsync("DELETE FROM ongs WHERE id = ?", [id]);
       } else {
-        await db.runAsync("DELETE FROM favoritos WHERE id_usuario = ?", [id]);
-        await db.runAsync("DELETE FROM solicitacoes WHERE id_usuario = ?", [id]);
-        await db.runAsync("DELETE FROM usuarios WHERE id = ?", [id]);
+        await dbSqlite.runAsync("DELETE FROM favoritos WHERE id_usuario = ?", [id]);
+        await dbSqlite.runAsync("DELETE FROM solicitacoes WHERE id_usuario = ?", [id]);
+        await dbSqlite.runAsync("DELETE FROM usuarios WHERE id = ?", [id]);
       }
     });
 
@@ -377,19 +457,10 @@ export async function deleteAccount(): Promise<void> {
     return;
   }
 
-  const apiUrl =
-    process.env.EXPO_PUBLIC_API_URL || "https://api.petconnect.com.br";
-
-  const response = await fetch(`${apiUrl}/users/me`, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${session.token}`,
-    },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || "Não foi possível excluir a conta.");
+  if (auth.currentUser) {
+    const userRef = doc(db, "users", auth.currentUser.uid);
+    await updateDoc(userRef, { deleted: true });
+    await auth.currentUser.delete().catch(() => {});
   }
 
   await removeFallbackPrivacy(session);
@@ -398,38 +469,27 @@ export async function deleteAccount(): Promise<void> {
 
 export async function getUserWhatsapp(): Promise<string | null> {
   const session = await getSession();
-  if (
-    !session?.token ||
-    isMockToken(session.token) ||
-    isLocalToken(session.token)
-  ) {
-    return null;
-  }
+  if (!session?.token) return null;
 
-  const apiUrl =
-    process.env.EXPO_PUBLIC_API_URL || "https://api.petconnect.com.br";
-
-  try {
-    const response = await fetch(`${apiUrl}/users/me`, {
-      headers: { Authorization: `Bearer ${session.token}` },
-    });
-    if (!response.ok) return null;
-
-    const data = await response.json();
-    const raw =
-      data?.whatsapp ||
-      data?.phone ||
-      data?.telefone ||
-      data?.user?.whatsapp ||
-      data?.user?.phone ||
-      data?.user?.telefone;
-
-    const digits = String(raw || "").replace(/\D/g, "");
-    if (!digits) return null;
-
+  if (session.user.whatsapp) {
+    const digits = String(session.user.whatsapp).replace(/\D/g, "");
     return digits.length <= 11 ? `55${digits}` : digits;
-  } catch (e) {
-    console.log("Erro ao buscar WhatsApp do usuário:", e);
-    return null;
   }
+
+  if (!isMockToken(session.token) && !isLocalToken(session.token) && auth.currentUser) {
+    try {
+      const userDocRef = doc(db, "users", auth.currentUser.uid);
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        const raw = data.whatsapp || data.phone || data.telefone;
+        const digits = String(raw || "").replace(/\D/g, "");
+        if (digits) return digits.length <= 11 ? `55${digits}` : digits;
+      }
+    } catch (e) {
+      console.log("Erro ao buscar WhatsApp do Firestore:", e);
+    }
+  }
+
+  return null;
 }

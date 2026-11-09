@@ -4,11 +4,12 @@ import { Ionicons } from "@expo/vector-icons";
 
 interface HeaderProps {
   title: string;
+  subtitle?: string;
   onBackPress?: () => void;
   rightAction?: React.ReactNode;
 }
 
-export function Header({ title, onBackPress, rightAction }: HeaderProps) {
+export function Header({ title, subtitle, onBackPress, rightAction }: HeaderProps) {
   return (
     <View style={styles.container}>
       <View style={styles.leftContainer}>
@@ -23,7 +24,10 @@ export function Header({ title, onBackPress, rightAction }: HeaderProps) {
           </Pressable>
         )}
       </View>
-      <Text style={styles.title} numberOfLines={1}>{title}</Text>
+      <View style={styles.titleContainer}>
+        <Text style={styles.title} numberOfLines={1}>{title}</Text>
+        {subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text> : null}
+      </View>
       <View style={styles.rightContainer}>
         {rightAction}
       </View>
@@ -33,24 +37,24 @@ export function Header({ title, onBackPress, rightAction }: HeaderProps) {
 
 const styles = StyleSheet.create({
   container: {
-    height: 56,
+    height: 64,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
+    borderBottomColor: "#E5E7EB",
     width: "100%",
     maxWidth: 1080,
     alignSelf: "center",
   },
   leftContainer: {
-    width: 44,
+    width: 48,
     alignItems: "flex-start",
   },
   rightContainer: {
-    width: 44,
+    width: 48,
     alignItems: "flex-end",
   },
   backButton: {
@@ -65,11 +69,22 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     backgroundColor: "#D1E7DD",
   },
-  title: {
+  titleContainer: {
     flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 8,
+  },
+  title: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#2C3E50",
+    fontWeight: "bold",
+    color: "#111827",
     textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 12,
+    color: "#6B7280",
+    textAlign: "center",
+    marginTop: 2,
   },
 });
