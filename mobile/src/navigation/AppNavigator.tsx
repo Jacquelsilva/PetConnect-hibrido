@@ -7,7 +7,7 @@ import { TelaEscolhaCadastro } from "@/screens/TelaEscolhaCadastro";
 import TelaCadastroUsuario from "@/screens/TelaCadastroUsuario";
 import TelaCadastroOng from "@/screens/TelaCadastroOng";
 import { TelaSolicitacoesOngs } from "@/screens/TelaSolicitacoesOngs";
-import { TelaSolicitacoesUsuario } from "@/screens/TelaSolicitacoesUsuario";
+import TelaSolicitacoesUsuario from "@/screens/TelaSolicitacoesUsuario";
 import { TelaHomeUsuario } from "@/screens/TelaHomeUsuario";
 import { TelaHomeOngs } from "@/screens/TelaHomeOngs";
 import { SettingsScreen } from "@/screens/SettingsScreen";
@@ -28,8 +28,16 @@ import type { RootStackParamList } from "@/types/navigation";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+/**
+ * getId faz com que navigate("Tela") reutilize a instância que já está
+ * na pilha (voltando até ela) em vez de empilhar uma cópia nova.
+ * É isso que evita o loop Settings <-> Solicitações.
+ */
+const singleton = (id: string) => () => id;
+
 export function AppNavigator() {
-  const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | null>(null);
+  const [initialRoute, setInitialRoute] =
+    useState<keyof RootStackParamList | null>(null);
   const [loadingSession, setLoadingSession] = useState(true);
 
   useEffect(() => {
@@ -69,101 +77,72 @@ export function AppNavigator() {
         screenOptions={{ headerShown: false }}
       >
         {/* Login */}
-        <Stack.Screen
-          name="Login"
-          component={LoginScreen}
-        />
+        <Stack.Screen name="Login" component={LoginScreen} />
 
         {/* Cadastro */}
-        <Stack.Screen
-          name="EscolhaCadastro"
-          component={TelaEscolhaCadastro}
-        />
-
-        <Stack.Screen
-          name="CadastroUsuario"
-          component={TelaCadastroUsuario}
-        />
-
-        <Stack.Screen
-          name="CadastroOng"
-          component={TelaCadastroOng}
-        />
+        <Stack.Screen name="EscolhaCadastro" component={TelaEscolhaCadastro} />
+        <Stack.Screen name="CadastroUsuario" component={TelaCadastroUsuario} />
+        <Stack.Screen name="CadastroOng" component={TelaCadastroOng} />
 
         {/* Home */}
         <Stack.Screen
           name="HomeUsuario"
           component={TelaHomeUsuario}
+          getId={singleton("HomeUsuario")}
         />
-
         <Stack.Screen
           name="HomeOngs"
           component={TelaHomeOngs}
+          getId={singleton("HomeOngs")}
         />
 
         {/* Solicitações */}
         <Stack.Screen
-          name="SolicitacoesUsuario"
-          component={TelaSolicitacoesUsuario}
-        />
-
-        <Stack.Screen
           name="SolicitacoesOngs"
           component={TelaSolicitacoesOngs}
+          getId={singleton("SolicitacoesOngs")}
         />
+        <Stack.Screen
+          name="SolicitacoesUsuario"
+          component={TelaSolicitacoesUsuario}
+          getId={singleton("SolicitacoesUsuario")}
+        />
+        <Stack.Screen name="solicitaradocao" component={SolicitarAdocaoScreen} />
 
         {/* Settings, PetDetails, Favoritos & EditarPerfil */}
         <Stack.Screen
           name="Settings"
           component={SettingsScreen}
+          getId={singleton("Settings")}
         />
-
-        <Stack.Screen
-          name="PetDetails"
-          component={PetDetailsScreen}
-        />
-
+        <Stack.Screen name="PetDetails" component={PetDetailsScreen} />
         <Stack.Screen
           name="Favoritos"
           component={TelaFavoritos}
+          getId={singleton("Favoritos")}
         />
-
-        <Stack.Screen
-          name="EditarPerfil"
-          component={TelaEditarPerfil}
-        />
+        <Stack.Screen name="EditarPerfil" component={TelaEditarPerfil} />
 
         {/* Privacidade e Segurança */}
         <Stack.Screen
           name="Privacyandsecurity"
           component={PrivacySecurityScreen}
         />
+        <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+        <Stack.Screen name="Termsofuse" component={TermsofuseScreen} />
+        <Stack.Screen name="Helpandsupport" component={HelpSupportScreen} />
 
+        {/* Animais (ONG) */}
         <Stack.Screen
-          name="PrivacyPolicy"
-          component={PrivacyPolicyScreen}
+          name="manageanimals"
+          component={ManageAnimalsScreen}
+          getId={singleton("manageanimals")}
         />
-
         <Stack.Screen
-          name="Termsofuse"
-          component={TermsofuseScreen}
+          name="animalregistration"
+          component={AnimalRegistrationScreen}
         />
-
-        <Stack.Screen
-          name="Helpandsupport"
-          component={HelpSupportScreen}
-        />
-
-        <Stack.Screen name="manageanimals" component={ManageAnimalsScreen} />
-
-        <Stack.Screen name="animalregistration" component={AnimalRegistrationScreen} />
-
         <Stack.Screen name="editanimal" component={EditAnimalScreen} />
-
-        <Stack.Screen name="animaldetails" component={PetDetailsScreen} />
-
-        <Stack.Screen name="solicitaradocao" component={SolicitarAdocaoScreen} />
-        
       </Stack.Navigator>
     </NavigationContainer>
   );

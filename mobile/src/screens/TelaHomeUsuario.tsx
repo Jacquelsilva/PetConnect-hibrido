@@ -44,20 +44,20 @@ export function TelaHomeUsuario({ navigation }: Props) {
   const [idUsuario, setIdUsuario] = useState<number | null>(null);
   const [carregando, setCarregando] = useState(true);
 
-  const acoes = [
+  const abas = [
     {
-      titulo: "Meus Favoritos",
-      icone: "heart" as const,
+      titulo: "Favoritos",
+      icone: "heart-outline" as const,
       onPress: () => navigation.navigate("Favoritos"),
     },
     {
-      titulo: "Minhas solicitações",
-      icone: "document-text" as const,
+      titulo: "Solicitações",
+      icone: "document-text-outline" as const,
       onPress: () => navigation.navigate("SolicitacoesUsuario"),
     },
     {
       titulo: "Configurações",
-      icone: "settings" as const,
+      icone: "settings-outline" as const,
       onPress: () => navigation.navigate("Settings"),
     },
   ];
@@ -111,9 +111,9 @@ export function TelaHomeUsuario({ navigation }: Props) {
   }, [animais, busca, filtro]);
 
   function verSobre(animal: Animal) {
-    if (!animal.id) return;
-    navigation.navigate("animaldetails", { id: animal.id });
-  }
+  if (!animal.id) return;
+  navigation.navigate("PetDetails", { id: animal.id });
+}
 
   async function favoritar(animal: Animal) {
     if (!animal.id || idUsuario === null) return;
@@ -216,19 +216,6 @@ export function TelaHomeUsuario({ navigation }: Props) {
         })}
       </View>
 
-      <View style={styles.acoes}>
-        {acoes.map((acao) => (
-          <TouchableOpacity
-            key={acao.titulo}
-            style={styles.acao}
-            onPress={acao.onPress}
-          >
-            <Ionicons name={acao.icone} size={22} color="#0F766E" />
-            <Text style={styles.acaoTexto}>{acao.titulo}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
       <Text style={styles.secao}>ANIMAIS DISPONÍVEIS</Text>
     </View>
   );
@@ -249,6 +236,20 @@ export function TelaHomeUsuario({ navigation }: Props) {
           </Text>
         }
       />
+
+      {/* Barra de navegação inferior */}
+      <View style={styles.barra}>
+        {abas.map((aba) => (
+          <TouchableOpacity
+            key={aba.titulo}
+            style={styles.aba}
+            onPress={aba.onPress}
+          >
+            <Ionicons name={aba.icone} size={24} color="#0F766E" />
+            <Text style={styles.abaTexto}>{aba.titulo}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
     </View>
   );
 }
@@ -319,28 +320,6 @@ const styles = StyleSheet.create({
   chipTextoSelecionado: {
     color: "#FFFFFF",
     fontWeight: "600",
-  },
-  acoes: {
-    gap: 10,
-    marginBottom: 24,
-  },
-  acao: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    padding: 14,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  acaoTexto: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#333333",
   },
   secao: {
     fontSize: 12,
@@ -415,5 +394,28 @@ const styles = StyleSheet.create({
     color: "#666666",
     textAlign: "center",
     paddingTop: 24,
+  },
+  barra: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+    paddingTop: 10,
+    paddingBottom: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  aba: {
+    flex: 1,
+    alignItems: "center",
+    gap: 4,
+  },
+  abaTexto: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#0F766E",
   },
 });

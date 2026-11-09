@@ -14,6 +14,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Header } from "@/components/ui/Header";
+import { PhotoPicker } from "@/components/ui/PhotoPicker";
 
 import { getSession } from "@/services/auth";
 import { getDatabase } from "@/database/Database";
@@ -201,7 +202,7 @@ export function AnimalRegistrationScreen({ navigation }: Props) {
   const [porte, setPorte] = useState("");
   const [sexo, setSexo] = useState("");
   const [descricao, setDescricao] = useState("");
-  const [fotoUrl, setFotoUrl] = useState("");
+  const [fotoUrl, setFotoUrl] = useState<string | null>(null);
 
   const [erros, setErros] = useState<Erros>({});
   const [carregando, setCarregando] = useState(false);
@@ -259,7 +260,7 @@ export function AnimalRegistrationScreen({ navigation }: Props) {
         porte,
         sexo,
         descricao: descricao.trim(),
-        foto_url: fotoUrl.trim() || null,
+        foto_url: fotoUrl || null,
         id_ong: Number(session.user.id),
       };
 
@@ -298,6 +299,12 @@ export function AnimalRegistrationScreen({ navigation }: Props) {
         <Text style={styles.subtitle}>
           Preencha os dados do animal que está disponível para adoção.
         </Text>
+
+        <PhotoPicker
+          label="Foto do animal (opcional)"
+          value={fotoUrl}
+          onChange={setFotoUrl}
+        />
 
         <Input
           label="Nome"
@@ -346,14 +353,6 @@ export function AnimalRegistrationScreen({ navigation }: Props) {
           value={descricao}
           onChangeText={setDescricao}
           multiline
-        />
-
-        <Input
-          label="Link da foto (opcional)"
-          placeholder="https://..."
-          value={fotoUrl}
-          onChangeText={setFotoUrl}
-          autoCapitalize="none"
         />
 
         <Button

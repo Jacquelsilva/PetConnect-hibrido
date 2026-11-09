@@ -14,7 +14,7 @@ import { Header } from "@/components/ui/Header";
 
 import { getSession } from "@/services/auth";
 import { getDatabase } from "@/database/Database";
-import { listarIdsFavoritos, alternarFavorito, listarAnimaisFavoritos } from "@/database/FavoritosDAO";
+import { alternarFavorito, listarAnimaisFavoritos } from "@/database/FavoritosDAO";
 
 import type { Animal } from "@/models/types";
 import type { FavoritosScreenProps } from "@/types/navigation";
@@ -28,6 +28,24 @@ export function TelaFavoritos({ navigation }: FavoritosScreenProps) {
   const [animais, setAnimais] = useState<Animal[]>([]);
   const [idUsuario, setIdUsuario] = useState<number | null>(null);
   const [carregando, setCarregando] = useState(true);
+
+  const abas = [
+    {
+      titulo: "Favoritos",
+      icone: "heart" as const, // preenchido: é a tela atual
+      onPress: () => {},
+    },
+    {
+      titulo: "Solicitações",
+      icone: "document-text-outline" as const,
+      onPress: () => navigation.navigate("SolicitacoesUsuario"),
+    },
+    {
+      titulo: "Configurações",
+      icone: "settings-outline" as const,
+      onPress: () => navigation.navigate("Settings"),
+    },
+  ];
 
   useFocusEffect(
     useCallback(() => {
@@ -73,7 +91,8 @@ export function TelaFavoritos({ navigation }: FavoritosScreenProps) {
 
   function verSobre(animal: Animal) {
     if (!animal.id) return;
-    navigation.navigate("animaldetails", { id: animal.id });
+    // Corrigido: a rota registrada no AppNavigator é "PetDetails"
+    navigation.navigate("PetDetails", { id: animal.id });
   }
 
   function renderItem({ item }: { item: Animal }) {
@@ -118,6 +137,7 @@ export function TelaFavoritos({ navigation }: FavoritosScreenProps) {
       <Header title="Meus Favoritos" onBackPress={() => navigation.goBack()} />
 
       <FlatList
+        style={styles.flat}
         data={animais}
         keyExtractor={(item) => String(item.id)}
         renderItem={renderItem}
@@ -130,6 +150,20 @@ export function TelaFavoritos({ navigation }: FavoritosScreenProps) {
           </Text>
         }
       />
+
+      {/* Barra de navegação inferior */}
+      <View style={styles.barra}>
+        {abas.map((aba) => (
+          <TouchableOpacity
+            key={aba.titulo}
+            style={styles.aba}
+            onPress={aba.onPress}
+          >
+            <Ionicons name={aba.icone} size={24} color="#0F766E" />
+            <Text style={styles.abaTexto}>{aba.titulo}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
     </View>
   );
 }
@@ -138,6 +172,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F8F9FA",
+  },
+  flat: {
+    flex: 1,
   },
   lista: {
     padding: 16,
@@ -213,5 +250,28 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingTop: 40,
     lineHeight: 22,
+  },
+  barra: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+    paddingTop: 10,
+    paddingBottom: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  aba: {
+    flex: 1,
+    alignItems: "center",
+    gap: 4,
+  },
+  abaTexto: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#0F766E",
   },
 });

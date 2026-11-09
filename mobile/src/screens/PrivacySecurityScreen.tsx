@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { Header } from "@/components/ui/Header";
 import { Button } from "@/components/ui/Button";
 import { clearSession, changePassword, deleteAccount } from "@/services/auth";
+import {
+  getPrivacySettings,
+  updatePrivacySettings,
+  DEFAULT_PRIVACY_SETTINGS,
+  type PrivacySettings,
+} from "@/services/privacySettings";
 import type { PrivacySecurityScreenProps } from "@/types/navigation";
 
 function notify(title: string, message: string) {
@@ -43,10 +49,10 @@ function confirmAction(
 }
 
 export function PrivacySecurityScreen({ navigation }: PrivacySecurityScreenProps) {
-  const [profileVisible, setProfileVisible] = useState(true);
-  const [showPhone, setShowPhone] = useState(false);
-  const [showEmail, setShowEmail] = useState(false);
-  const [shareLocation, setShareLocation] = useState(true);
+  const [settings, setSettings] = useState<PrivacySettings>(
+    DEFAULT_PRIVACY_SETTINGS
+  );
+  const [loadingSettings, setLoadingSettings] = useState(true);
 
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -55,6 +61,38 @@ export function PrivacySecurityScreen({ navigation }: PrivacySecurityScreenProps
   const [showPasswords, setShowPasswords] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Carrega as preferências salvas ao abrir a tela
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const data = await getPrivacySettings();
+        if (active) setSettings(data);
+      } catch (e: any) {
+        notify("Erro", e?.message || "Não foi possível carregar suas preferências.");
+      } finally {
+        if (active) setLoadingSettings(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Atualiza na hora e salva; se falhar, volta ao valor anterior
+  const toggleSetting = useCallback(
+    async (key: keyof PrivacySettings, value: boolean) => {
+      setSettings((s) => ({ ...s, [key]: value }));
+      try {
+        await updatePrivacySettings({ [key]: value });
+      } catch (e: any) {
+        setSettings((s) => ({ ...s, [key]: !value }));
+        notify("Erro", e?.message || "Não foi possível salvar a preferência.");
+      }
+    },
+    []
+  );
 
   const resetPasswordForm = () => {
     setCurrentPassword("");
@@ -94,19 +132,13 @@ export function PrivacySecurityScreen({ navigation }: PrivacySecurityScreenProps
     }
   };
 
+  // Só remove a sessão. Não limpa o storage inteiro, senão outros
+  // dados guardados no aparelho seriam apagados no logout.
   const finishSession = async () => {
     try {
       await clearSession();
     } catch (e) {
       console.log(e);
-    }
-    if (Platform.OS === "web" && typeof window !== "undefined") {
-      try {
-        window.localStorage.clear();
-        window.sessionStorage.clear();
-      } catch (e) {
-        console.log(e);
-      }
     }
     navigation.reset({
       index: 0,
@@ -133,7 +165,7 @@ export function PrivacySecurityScreen({ navigation }: PrivacySecurityScreenProps
     );
   };
 
-  const handleLogoutAll = () => {
+  const handleLogout = () => {
     confirmAction(
       "Sair da conta",
       "Deseja encerrar a sessão neste dispositivo?",
@@ -146,8 +178,7 @@ export function PrivacySecurityScreen({ navigation }: PrivacySecurityScreenProps
     icon: keyof typeof Ionicons.glyphMap,
     label: string,
     description: string,
-    value: boolean,
-    onChange: (v: boolean) => void
+    key: keyof PrivacySettings
   ) => (
     <View style={styles.row}>
       <Ionicons name={icon} size={22} color="#555" />
@@ -156,10 +187,11 @@ export function PrivacySecurityScreen({ navigation }: PrivacySecurityScreenProps
         <Text style={styles.rowDescription}>{description}</Text>
       </View>
       <Switch
-        value={value}
-        onValueChange={onChange}
+        value={settings[key]}
+        onValueChange={(v) => toggleSetting(key, v)}
+        disabled={loadingSettings}
         trackColor={{ false: "#D0D0D0", true: "#A5D6A7" }}
-        thumbColor={value ? "#4CAF50" : "#F4F4F4"}
+        thumbColor={settings[key] ? "#4CAF50" : "#F4F4F4"}
       />
     </View>
   );
@@ -174,32 +206,28 @@ export function PrivacySecurityScreen({ navigation }: PrivacySecurityScreenProps
             "eye-outline",
             "Perfil público",
             "Outros usuários podem ver seu perfil",
-            profileVisible,
-            setProfileVisible
+            "profileVisible"
           )}
           <View style={styles.divider} />
           {renderSwitchRow(
             "call-outline",
             "Mostrar telefone",
             "Exibir seu telefone nas solicitações",
-            showPhone,
-            setShowPhone
+            "showPhone"
           )}
           <View style={styles.divider} />
           {renderSwitchRow(
             "mail-outline",
             "Mostrar e-mail",
             "Exibir seu e-mail no perfil",
-            showEmail,
-            setShowEmail
+            "showEmail"
           )}
           <View style={styles.divider} />
           {renderSwitchRow(
             "location-outline",
             "Compartilhar localização",
             "Usar sua região para sugerir pets próximos",
-            shareLocation,
-            setShareLocation
+            "shareLocation"
           )}
         </View>
 
@@ -273,7 +301,7 @@ export function PrivacySecurityScreen({ navigation }: PrivacySecurityScreenProps
           )}
 
           <View style={styles.divider} />
-          <Pressable style={styles.row} onPress={handleLogoutAll}>
+          <Pressable style={styles.row} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={22} color="#555" />
             <View style={styles.rowTextBox}>
               <Text style={styles.rowText}>Encerrar sessão</Text>

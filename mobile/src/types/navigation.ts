@@ -10,7 +10,7 @@ export type RootStackParamList = {
   SolicitacoesUsuario: undefined;
   SolicitacoesOngs: undefined;
   Settings: undefined;
-  PetDetails: { pet?: any } | undefined;
+ PetDetails: { id: number }; 
   Favoritos: undefined;
   EditarPerfil: undefined;
   Privacyandsecurity: undefined;
@@ -22,6 +22,7 @@ export type RootStackParamList = {
   editanimal: { id: number };
   animaldetails: { id: number };
   solicitaradocao: { id: number };
+
 };
 
 

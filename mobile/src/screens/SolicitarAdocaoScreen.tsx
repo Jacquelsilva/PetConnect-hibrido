@@ -17,7 +17,10 @@ import { Header } from "@/components/ui/Header";
 import { getSession } from "@/services/auth";
 import { getDatabase } from "@/database/Database";
 import { buscarAnimal } from "@/database/AnimalDAO";
-import { inserirSolicitacao, jaSolicitou } from "@/database/SolicitacaoDAO";
+import {
+  inserirSolicitacaoComMotivo,
+  jaSolicitou,
+} from "@/database/SolicitacaoDAO";
 
 import type { Animal } from "@/models/types";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -40,7 +43,8 @@ function mostrarAviso(titulo: string, mensagem: string, aoFechar?: () => void) {
     Alert.alert(
       titulo,
       mensagem,
-      aoFechar ? [{ text: "OK", onPress: aoFechar }] : undefined
+      [{ text: "OK", onPress: aoFechar }],
+      { cancelable: true, onDismiss: aoFechar }
     );
   }
 }
@@ -134,6 +138,12 @@ export function SolicitarAdocaoScreen({ navigation, route }: Props) {
 
     setEnviando(true);
 
+    const irParaHome = () =>
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "HomeUsuario" }],
+      });
+
     try {
       const session = await getSession();
 
@@ -143,18 +153,29 @@ export function SolicitarAdocaoScreen({ navigation, route }: Props) {
       }
 
       const idUsuario = Number(session.user.id);
+
+      // Conta Google/mock tem id não numérico (NaN) e não consegue solicitar
+      if (!Number.isFinite(idUsuario) || idUsuario <= 0) {
+        mostrarAviso(
+          "Conta sem cadastro",
+          "Para solicitar uma adoção, entre com uma conta cadastrada (CPF e senha)."
+        );
+        return;
+      }
+
       const idAnimal = String(id);
       const db = await getDatabase();
 
       if (await jaSolicitou(db, idUsuario, idAnimal)) {
         mostrarAviso(
           "Solicitação já enviada",
-          "Você já enviou uma solicitação para este animal. Acompanhe em Minhas solicitações."
+          "Você já enviou uma solicitação para este animal. Acompanhe em Minhas solicitações.",
+          irParaHome
         );
         return;
       }
 
-      const ok = await inserirSolicitacao(db, {
+      const resultado = await inserirSolicitacaoComMotivo(db, {
         id_usuario: idUsuario,
         id_animal: idAnimal,
         nome_solicitante: nome.trim(),
@@ -165,15 +186,29 @@ export function SolicitarAdocaoScreen({ navigation, route }: Props) {
         observacoes: observacoes.trim(),
       });
 
-      if (!ok) {
-        mostrarAviso("Erro", "Não foi possível enviar a solicitação.");
+      if (!resultado.ok) {
+        if (resultado.motivo === "duplicada") {
+          mostrarAviso(
+            "Solicitação já enviada",
+            "Você já enviou uma solicitação para este animal.",
+            irParaHome
+          );
+        } else if (resultado.motivo === "usuario_invalido") {
+          mostrarAviso(
+            "Conta sem cadastro",
+            "Entre com uma conta cadastrada (CPF e senha) para solicitar."
+          );
+        } else {
+          mostrarAviso("Erro", "Não foi possível enviar a solicitação.");
+        }
         return;
       }
 
+      // Sucesso: navega primeiro, depois avisa (não depende do alerta)
+      irParaHome();
       mostrarAviso(
         "Solicitação enviada",
-        "A ONG recebeu o seu pedido e vai entrar em contato. Você pode acompanhar em Minhas solicitações.",
-        () => navigation.goBack()
+        "A ONG recebeu o seu pedido e vai entrar em contato."
       );
     } catch (e) {
       console.error("ERRO AO ENVIAR SOLICITAÇÃO:", e);

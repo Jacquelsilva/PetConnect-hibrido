@@ -7,6 +7,8 @@ import { getDatabase } from "@/database/Database";
 WebBrowser.maybeCompleteAuthSession();
 
 const AUTH_STORAGE_KEY = "@PetConnect:auth_session";
+// Mesma chave usada por services/privacySettings.ts para contas Google/mock
+const PRIVACY_FALLBACK_PREFIX = "@PetConnect:privacy:";
 
 export interface LoginCredentials {
   document: string; // CPF or CNPJ
@@ -51,7 +53,6 @@ export async function clearSession(): Promise<void> {
   }
 }
 
-// Login local: consulta o SQLite (usuarios por CPF, ongs por CNPJ)
 export async function loginUser(
   credentials: LoginCredentials
 ): Promise<AuthResponse> {
@@ -64,7 +65,6 @@ export async function loginUser(
 
   const db = await getDatabase();
 
-  // CNPJ tem 14 dígitos (ONG), CPF tem 11 (usuário)
   if (documento.length === 14) {
     const ong = await db.getFirstAsync<{
       id: number;
@@ -220,7 +220,6 @@ export async function changePassword(
     return;
   }
 
-  // Conta local: troca a senha direto no SQLite
   if (isLocalToken(session.token)) {
     const db = await getDatabase();
     const tabela = session.user.type === "ong" ? "ongs" : "usuarios";
@@ -260,6 +259,54 @@ export async function changePassword(
   }
 }
 
+
+async function removeFallbackPrivacy(session: AuthResponse): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(
+      `${PRIVACY_FALLBACK_PREFIX}${session.user.type}:${session.user.id}`
+    );
+  } catch (error) {
+    console.error("Erro ao remover preferências de privacidade:", error);
+  }
+}
+
+
+async function removeLocalExtras(
+  type: "user" | "ong",
+  id: number
+): Promise<void> {
+  try {
+    const db = await getDatabase();
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS privacidade (
+        tipo TEXT NOT NULL,
+        id_conta INTEGER NOT NULL,
+        perfil_publico INTEGER NOT NULL DEFAULT 1,
+        mostrar_telefone INTEGER NOT NULL DEFAULT 0,
+        mostrar_email INTEGER NOT NULL DEFAULT 0,
+        compartilhar_localizacao INTEGER NOT NULL DEFAULT 1,
+        PRIMARY KEY (tipo, id_conta)
+      );
+      CREATE TABLE IF NOT EXISTS foto_perfil (
+        tipo TEXT NOT NULL,
+        id_conta INTEGER NOT NULL,
+        foto TEXT NOT NULL,
+        PRIMARY KEY (tipo, id_conta)
+      );
+    `);
+    await db.runAsync(
+      "DELETE FROM privacidade WHERE tipo = ? AND id_conta = ?",
+      [type, id]
+    );
+    await db.runAsync(
+      "DELETE FROM foto_perfil WHERE tipo = ? AND id_conta = ?",
+      [type, id]
+    );
+  } catch (error) {
+    console.error("Erro ao remover dados extras da conta:", error);
+  }
+}
+
 export async function deleteAccount(): Promise<void> {
   const session = await getSession();
   if (!session?.token) {
@@ -267,16 +314,45 @@ export async function deleteAccount(): Promise<void> {
   }
 
   if (isMockToken(session.token)) {
+    await removeFallbackPrivacy(session);
     await clearSession();
     return;
   }
 
-  // Conta local: apaga a conta e os dados ligados a ela no SQLite
+
   if (isLocalToken(session.token)) {
     const db = await getDatabase();
     const id = Number(session.user.id);
 
+    // As tabelas precisam existir antes da transação
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS privacidade (
+        tipo TEXT NOT NULL,
+        id_conta INTEGER NOT NULL,
+        perfil_publico INTEGER NOT NULL DEFAULT 1,
+        mostrar_telefone INTEGER NOT NULL DEFAULT 0,
+        mostrar_email INTEGER NOT NULL DEFAULT 0,
+        compartilhar_localizacao INTEGER NOT NULL DEFAULT 1,
+        PRIMARY KEY (tipo, id_conta)
+      );
+      CREATE TABLE IF NOT EXISTS foto_perfil (
+        tipo TEXT NOT NULL,
+        id_conta INTEGER NOT NULL,
+        foto TEXT NOT NULL,
+        PRIMARY KEY (tipo, id_conta)
+      );
+    `);
+
     await db.withTransactionAsync(async () => {
+      await db.runAsync(
+        "DELETE FROM privacidade WHERE tipo = ? AND id_conta = ?",
+        [session.user.type, id]
+      );
+      await db.runAsync(
+        "DELETE FROM foto_perfil WHERE tipo = ? AND id_conta = ?",
+        [session.user.type, id]
+      );
+
       if (session.user.type === "ong") {
         const animaisDaOng = `SELECT CAST(id AS TEXT) FROM animais WHERE id_ong = ?`;
 
@@ -316,6 +392,7 @@ export async function deleteAccount(): Promise<void> {
     throw new Error(errorData.message || "Não foi possível excluir a conta.");
   }
 
+  await removeFallbackPrivacy(session);
   await clearSession();
 }
 

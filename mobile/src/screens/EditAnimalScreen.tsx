@@ -2,7 +2,6 @@ import React, { createElement, useEffect, useState } from "react";
 import {
   Text,
   View,
-  Image,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
@@ -15,6 +14,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Header } from "@/components/ui/Header";
+import { PhotoPicker } from "@/components/ui/PhotoPicker";
 
 import { getDatabase } from "@/database/Database";
 import { buscarAnimal, atualizarAnimal } from "@/database/AnimalDAO";
@@ -200,7 +200,7 @@ export function EditAnimalScreen({ navigation, route }: Props) {
   const [porte, setPorte] = useState("");
   const [sexo, setSexo] = useState("");
   const [descricao, setDescricao] = useState("");
-  const [fotoUrl, setFotoUrl] = useState("");
+  const [fotoUrl, setFotoUrl] = useState<string | null>(null);
 
   const [erros, setErros] = useState<Erros>({});
   const [carregando, setCarregando] = useState(true);
@@ -225,7 +225,7 @@ export function EditAnimalScreen({ navigation, route }: Props) {
         setPorte(animal.porte || "");
         setSexo(animal.sexo || "");
         setDescricao(animal.descricao || "");
-        setFotoUrl(animal.foto_url || "");
+        setFotoUrl(animal.foto_url || null);
         setDataNascimento(
           animal.data_nascimento ? deISO(animal.data_nascimento) : null
         );
@@ -291,7 +291,7 @@ export function EditAnimalScreen({ navigation, route }: Props) {
         porte,
         sexo,
         descricao: descricao.trim(),
-        foto_url: fotoUrl.trim() || null,
+        foto_url: fotoUrl || null,
       };
 
       const db = await getDatabase();
@@ -343,9 +343,11 @@ export function EditAnimalScreen({ navigation, route }: Props) {
           Altere os dados e toque em salvar.
         </Text>
 
-        {fotoUrl.trim() ? (
-          <Image source={{ uri: fotoUrl.trim() }} style={styles.preview} />
-        ) : null}
+        <PhotoPicker
+          label="Foto do animal (opcional)"
+          value={fotoUrl}
+          onChange={setFotoUrl}
+        />
 
         <Input
           label="Nome"
@@ -397,14 +399,6 @@ export function EditAnimalScreen({ navigation, route }: Props) {
           multiline
         />
 
-        <Input
-          label="Link da foto (opcional)"
-          placeholder="https://..."
-          value={fotoUrl}
-          onChangeText={setFotoUrl}
-          autoCapitalize="none"
-        />
-
         <Button
           title={salvando ? "Salvando..." : "Salvar alterações"}
           variant="primary"
@@ -446,13 +440,6 @@ const styles = StyleSheet.create({
     color: "#666666",
     marginBottom: 20,
     lineHeight: 22,
-  },
-  preview: {
-    width: "100%",
-    height: 180,
-    borderRadius: 12,
-    marginBottom: 16,
-    backgroundColor: "#E6F4F1",
   },
   grupo: {
     marginBottom: 16,

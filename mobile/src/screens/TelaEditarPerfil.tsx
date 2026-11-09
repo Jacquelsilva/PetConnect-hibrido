@@ -1,9 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet, ScrollView, Alert, Platform } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  Pressable,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  Platform,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { Header } from "@/components/ui/Header";
 import { InputGroup } from "@/components/ui/InputGroup";
 import { Button } from "@/components/ui/Button";
 import { getSession, saveSession } from "@/services/auth";
+import { getProfilePhoto, saveProfilePhoto } from "@/services/profilePhoto";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDatabase } from "@/database/Database";
 import { buscarUsuarioPorId, atualizarUsuario } from "@/database/UsuarioDAO";
@@ -44,11 +56,13 @@ export function TelaEditarPerfil({ navigation }: Props) {
   const [userId, setUserId] = useState<number | null>(null);
   const [salvando, setSalvando] = useState(false);
 
+  const [foto, setFoto] = useState<string | null>(null);
+  const [fotoAlterada, setFotoAlterada] = useState(false);
+
   useEffect(() => {
     async function loadData() {
       try {
         const session = await getSession();
-        console.log("SESSÃO NA EDIÇÃO:", JSON.stringify(session));
 
         if (!session || !session.user?.id) {
           console.error("EDIÇÃO: sessão sem usuário/ID.");
@@ -60,6 +74,8 @@ export function TelaEditarPerfil({ navigation }: Props) {
         setUserType(session.user.type);
 
         const db = await getDatabase();
+
+        setFoto(await getProfilePhoto(session.user.type, id));
 
         if (session.user.type === "ong") {
           const ongs = await db.getAllAsync<any>(
@@ -105,11 +121,38 @@ export function TelaEditarPerfil({ navigation }: Props) {
     loadData();
   }, []);
 
+  const escolherFoto = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.4,
+        base64: true,
+      });
+
+      if (result.canceled || !result.assets?.length) return;
+
+      const asset = result.assets[0];
+      const dataUri = asset.base64
+        ? `data:${asset.mimeType || "image/jpeg"};base64,${asset.base64}`
+        : asset.uri;
+
+      setFoto(dataUri);
+      setFotoAlterada(true);
+    } catch (e) {
+      console.error("Erro ao escolher foto:", e);
+      mostrarAviso("Erro", "Não foi possível abrir a galeria.");
+    }
+  };
+
+  const removerFoto = () => {
+    setFoto(null);
+    setFotoAlterada(true);
+  };
+
   const handleSalvar = async () => {
     if (salvando) return;
-
-    console.log("CLICOU EM SALVAR");
-    console.log("userId:", userId, "| userType:", userType);
 
     if (!nome.trim() || !email.trim() || !cep.trim()) {
       mostrarAviso("Erro", "Preencha os campos obrigatórios (nome, e-mail e CEP).");
@@ -158,11 +201,16 @@ export function TelaEditarPerfil({ navigation }: Props) {
         });
       }
 
-      console.log("RESULTADO DO UPDATE:", success);
-
       if (success) {
+        if (fotoAlterada) {
+          await saveProfilePhoto(userType, userId, foto);
+        }
+
+        // Mantém o token original (ex.: "local-user-1"). Trocar por "active"
+        // quebrava as checagens de conta local no resto do app.
+        const sessaoAtual = await getSession();
         await saveSession({
-          token: "active",
+          token: sessaoAtual?.token ?? `local-${userType}-${userId}`,
           user: {
             id: String(userId),
             name: nome.trim(),
@@ -200,6 +248,36 @@ export function TelaEditarPerfil({ navigation }: Props) {
       <Header title="Editar Perfil" onBackPress={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.formCard}>
+          <View style={styles.photoSection}>
+            <Pressable onPress={escolherFoto} style={styles.avatarWrapper}>
+              {foto ? (
+                <Image source={{ uri: foto }} style={styles.avatar} />
+              ) : (
+                <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                  <Ionicons
+                    name={userType === "ong" ? "business" : "person"}
+                    size={48}
+                    color="#9CA3AF"
+                  />
+                </View>
+              )}
+              <View style={styles.cameraBadge}>
+                <Ionicons name="camera" size={16} color="#FFFFFF" />
+              </View>
+            </Pressable>
+
+            <Pressable onPress={escolherFoto}>
+              <Text style={styles.photoLink}>
+                {foto ? "Alterar foto" : "Adicionar foto"}
+              </Text>
+            </Pressable>
+            {foto ? (
+              <Pressable onPress={removerFoto}>
+                <Text style={styles.photoRemove}>Remover foto</Text>
+              </Pressable>
+            ) : null}
+          </View>
+
           <InputGroup
             label="Nome Completo"
             placeholder="Digite seu nome"
@@ -262,6 +340,7 @@ export function TelaEditarPerfil({ navigation }: Props) {
           <Button
             title={salvando ? "Salvando..." : "Salvar Alterações"}
             onPress={handleSalvar}
+            disabled={salvando}
             style={styles.button}
           />
         </View>
@@ -292,6 +371,50 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+  },
+  photoSection: {
+    alignItems: "center",
+    marginBottom: 20,
+    gap: 6,
+  },
+  avatarWrapper: {
+    width: 110,
+    height: 110,
+  },
+  avatar: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+  },
+  avatarPlaceholder: {
+    backgroundColor: "#F1F3F5",
+    borderWidth: 1,
+    borderColor: "#E1E4E8",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cameraBadge: {
+    position: "absolute",
+    right: 0,
+    bottom: 0,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#0F766E",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  photoLink: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#0F766E",
+    marginTop: 4,
+  },
+  photoRemove: {
+    fontSize: 13,
+    color: "#D32F2F",
   },
   button: {
     marginTop: 16,

@@ -1,38 +1,95 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   ScrollView,
   Alert,
   Pressable,
   Platform,
   Switch,
+  TouchableOpacity,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { Header } from "@/components/ui/Header";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/contexts/AuthContext";
+import { getProfilePhoto } from "@/services/profilePhoto";
 import type { SettingsScreenProps } from "@/types/navigation";
 import { Ionicons } from "@expo/vector-icons";
 
 export function SettingsScreen({ navigation }: SettingsScreenProps) {
   const { user, logout } = useAuth();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [foto, setFoto] = useState<string | null>(null);
+
+  const ehOng = user?.type === "ong";
+
+  const abas = ehOng
+    ? [
+        {
+          titulo: "Início",
+          icone: "home-outline" as const,
+          onPress: () => navigation.navigate("HomeOngs"),
+        },
+        {
+          titulo: "Solicitações",
+          icone: "document-text-outline" as const,
+          onPress: () => navigation.navigate("SolicitacoesOngs"),
+        },
+        {
+          titulo: "Configurações",
+          icone: "settings" as const, // preenchido: é a tela atual
+          onPress: () => {},
+        },
+      ]
+    : [
+        {
+          titulo: "Favoritos",
+          icone: "heart-outline" as const,
+          onPress: () => navigation.navigate("Favoritos"),
+        },
+        {
+          titulo: "Solicitações",
+          icone: "document-text-outline" as const,
+          onPress: () => navigation.navigate("SolicitacoesUsuario"),
+        },
+        {
+          titulo: "Configurações",
+          icone: "settings" as const, // preenchido: é a tela atual
+          onPress: () => {},
+        },
+      ];
+
+  // Recarrega a foto sempre que a tela ganha foco (ex.: ao voltar da edição)
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+
+      (async () => {
+        if (!user?.id) {
+          if (active) setFoto(null);
+          return;
+        }
+        const uri = await getProfilePhoto(
+          user.type === "ong" ? "ong" : "user",
+          user.id
+        );
+        if (active) setFoto(uri);
+      })();
+
+      return () => {
+        active = false;
+      };
+    }, [user?.id, user?.type])
+  );
 
   const performLogout = async () => {
     try {
       await logout();
     } catch (e) {
       console.log("Erro ao limpar sessão:", e);
-    }
-
-    if (Platform.OS === "web" && typeof window !== "undefined") {
-      try {
-        window.localStorage.clear();
-        window.sessionStorage.clear();
-      } catch (e) {
-        console.log("Erro ao limpar storage da web:", e);
-      }
     }
 
     navigation.reset({
@@ -59,17 +116,24 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
   return (
     <View style={styles.container}>
       <Header title="Configurações" onBackPress={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+      >
         <View style={styles.section}>
           <View style={styles.avatarContainer}>
-            <Ionicons name="person-circle-outline" size={80} color="#4CAF50" />
+            {foto ? (
+              <Image source={{ uri: foto }} style={styles.avatarImage} />
+            ) : (
+              <Ionicons name="person-circle-outline" size={80} color="#4CAF50" />
+            )}
           </View>
           <Text style={styles.name}>{user?.name || "Usuário PetConnect"}</Text>
           <Text style={styles.email}>
             {user?.email || user?.document || "Conectado"}
           </Text>
           <Text style={styles.role}>
-            Tipo: {user?.type === "ong" ? "ONG" : "Tutor / Adotante"}
+            Tipo: {ehOng ? "ONG" : "Tutor / Adotante"}
           </Text>
         </View>
 
@@ -88,8 +152,8 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
               <Switch
                 value={notificationsEnabled}
                 onValueChange={setNotificationsEnabled}
-                trackColor={{ false: "#D1D5DB", color: "#4CAF50" }}
-                thumbColor="#FFFFFF"
+                trackColor={{ false: "#D1D5DB", true: "#A5D6A7" }}
+                thumbColor={notificationsEnabled ? "#4CAF50" : "#FFFFFF"}
               />
             </View>
             <View style={styles.divider} />
@@ -116,6 +180,20 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
           />
         </View>
       </ScrollView>
+
+      {/* Barra de navegação inferior */}
+      <View style={styles.barra}>
+        {abas.map((aba) => (
+          <TouchableOpacity
+            key={aba.titulo}
+            style={styles.aba}
+            onPress={aba.onPress}
+          >
+            <Ionicons name={aba.icone} size={24} color="#0F766E" />
+            <Text style={styles.abaTexto}>{aba.titulo}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
     </View>
   );
 }
@@ -124,6 +202,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F8F9FA",
+  },
+  scroll: {
+    flex: 1,
   },
   content: {
     padding: 20,
@@ -145,6 +226,15 @@ const styles = StyleSheet.create({
   },
   avatarContainer: {
     marginBottom: 12,
+    width: 80,
+    height: 80,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
   },
   name: {
     fontSize: 20,
@@ -211,5 +301,28 @@ const styles = StyleSheet.create({
   logoutButton: {
     width: "100%",
     borderColor: "#E53935",
+  },
+  barra: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+    paddingTop: 10,
+    paddingBottom: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  aba: {
+    flex: 1,
+    alignItems: "center",
+    gap: 4,
+  },
+  abaTexto: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#0F766E",
   },
 });
