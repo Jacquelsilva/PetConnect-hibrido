@@ -83,9 +83,20 @@ export function PetDetailsScreen({ navigation, route }: Props) {
       };
 
   const handleSolicitacao = () => {
-    navigation.navigate("solicitaradocao", { petId: petId || animal?.id });
-  };
+  const idAnimal = animal?.id ?? petId;
 
+  if (idAnimal === undefined || idAnimal === null) {
+    Alert.alert(
+      "Erro",
+      "Não foi possível identificar este animal. Volte e tente novamente."
+    );
+    return;
+  }
+
+  navigation.navigate("solicitaradocao", {
+    id: Number(idAnimal),
+  });
+};
   return (
     <View style={styles.container}>
       <Header title={pet.nome} onBackPress={() => navigation.goBack()} />
