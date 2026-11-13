@@ -1,7 +1,8 @@
+
 {
   "expo": {
     "name": "PetConnect",
-    "slug": "PetConnect",
+    "slug": "petconnect",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -23,7 +24,6 @@
     },
     "plugins": [
       "expo-sqlite",
-      "@react-native-community/datetimepicker",
       "expo-status-bar"
     ]
   }

@@ -63,27 +63,53 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
       ];
 
   // Recarrega a foto sempre que a tela ganha foco (ex.: ao voltar da edição)
-  useFocusEffect(
-    useCallback(() => {
-      let active = true;
+ 
+useFocusEffect(
+  useCallback(() => {
+    let ativo = true;
 
-      (async () => {
-        if (!user?.id) {
-          if (active) setFoto(null);
+    async function carregarFoto() {
+      if (!user?.id) {
+        setFoto(null);
+        return;
+      }
+
+      try {
+        const id = Number(user.id);
+
+        // Contas SQLite usam IDs numéricos.
+        // Contas Google/Firebase usam UIDs.
+        if (!Number.isInteger(id) || id <= 0) {
+          if (ativo) {
+            setFoto(user.photoUrl ?? null);
+          }
           return;
         }
-        const uri = await getProfilePhoto(
-          user.type === "ong" ? "ong" : "user",
-          user.id
-        );
-        if (active) setFoto(uri);
-      })();
 
-      return () => {
-        active = false;
-      };
-    }, [user?.id, user?.type])
-  );
+        const imagemSalva = await getProfilePhoto(
+          user.type,
+          id
+        );
+
+        if (ativo) {
+          setFoto(imagemSalva ?? user.photoUrl ?? null);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar foto:", error);
+
+        if (ativo) {
+          setFoto(user.photoUrl ?? null);
+        }
+      }
+    }
+
+    carregarFoto();
+
+    return () => {
+      ativo = false;
+    };
+  }, [user?.id, user?.type, user?.photoUrl])
+);
 
   const performLogout = async () => {
     try {
