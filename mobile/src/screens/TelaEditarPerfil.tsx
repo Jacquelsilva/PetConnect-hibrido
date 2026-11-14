@@ -9,6 +9,7 @@ import {
   Alert,
   Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { Header } from "@/components/ui/Header";
@@ -25,7 +26,6 @@ import type { RootStackParamList } from "@/types/navigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "EditarPerfil">;
 
-// Alert.alert não funciona na web, então usamos window.alert nesse caso
 function mostrarAviso(titulo: string, mensagem: string, aoFechar?: () => void) {
   if (Platform.OS === "web") {
     if (typeof window !== "undefined") {
@@ -42,6 +42,7 @@ function mostrarAviso(titulo: string, mensagem: string, aoFechar?: () => void) {
 }
 
 export function TelaEditarPerfil({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const { updateUser } = useAuth();
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -206,8 +207,6 @@ export function TelaEditarPerfil({ navigation }: Props) {
           await saveProfilePhoto(userType, userId, foto);
         }
 
-        // Mantém o token original (ex.: "local-user-1"). Trocar por "active"
-        // quebrava as checagens de conta local no resto do app.
         const sessaoAtual = await getSession();
         await saveSession({
           token: sessaoAtual?.token ?? `local-${userType}-${userId}`,
@@ -245,8 +244,15 @@ export function TelaEditarPerfil({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <Header title="Editar Perfil" onBackPress={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <View style={{ paddingTop: insets.top, backgroundColor: "#FFFFFF" }}>
+        <Header title="Editar Perfil" onBackPress={() => navigation.goBack()} />
+      </View>
+
+      <ScrollView
+        style={styles.flex}
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.formCard}>
           <View style={styles.photoSection}>
             <Pressable onPress={escolherFoto} style={styles.avatarWrapper}>
@@ -257,7 +263,7 @@ export function TelaEditarPerfil({ navigation }: Props) {
                   <Ionicons
                     name={userType === "ong" ? "business" : "person"}
                     size={48}
-                    color="#9CA3AF"
+                    color="#4CAF50"
                   />
                 </View>
               )}
@@ -354,22 +360,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F8F9FA",
   },
+  flex: {
+    flex: 1,
+  },
   scroll: {
-    padding: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    flexGrow: 1,
+    padding: 20,
+    paddingBottom: Platform.OS === "web" ? 20 : 40,
+    maxWidth: 720,
+    width: "100%",
+    alignSelf: "center",
   },
   formCard: {
     width: "100%",
-    maxWidth: Platform.OS === "web" ? 480 : "100%",
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 24,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowRadius: 4,
     elevation: 2,
   },
   photoSection: {
@@ -387,9 +396,7 @@ const styles = StyleSheet.create({
     borderRadius: 55,
   },
   avatarPlaceholder: {
-    backgroundColor: "#F1F3F5",
-    borderWidth: 1,
-    borderColor: "#E1E4E8",
+    backgroundColor: "#E8F5E9",
     alignItems: "center",
     justifyContent: "center",
   },

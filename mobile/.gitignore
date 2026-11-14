@@ -55,3 +55,5 @@ yarn-error.*
 .agents/
 openspec/
 TUTORIAL_AUDIO_EXPO.md
+
+.env

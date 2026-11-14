@@ -1,11 +1,12 @@
 import React, { useCallback, useState } from "react";
-import { Alert, Platform } from "react-native";
+import { Alert, Platform, View, StyleSheet } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 
 import {
   SolicitacoesBase,
   Solicitacao,
 } from "@/screens/SolicitacoesBase";
+import { BottomNavBarOng } from "@/components/ui/BottomNavBarOng";
 
 import { getSession } from "@/services/auth";
 import { getDatabase } from "@/database/Database";
@@ -189,13 +190,27 @@ export function TelaSolicitacoesOngs({ navigation }: Props) {
   }
 
   return (
-    <SolicitacoesBase
-      perfil="ong"
-      solicitacoes={solicitacoes}
-      onVerDetalhes={verDetalhes}
-      onAprovar={aprovarSolicitacao}
-      onRecusar={recusarSolicitacao}
-      onVoltar={() => navigation.goBack()}
-    />
+    <View style={styles.container}>
+      <View style={styles.conteudo}>
+        <SolicitacoesBase
+          perfil="ong"
+          solicitacoes={solicitacoes}
+          onVerDetalhes={verDetalhes}
+          onAprovar={aprovarSolicitacao}
+          onRecusar={recusarSolicitacao}
+        />
+      </View>
+
+      <BottomNavBarOng ativa="solicitacoes" />
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  conteudo: {
+    flex: 1,
+  },
+});

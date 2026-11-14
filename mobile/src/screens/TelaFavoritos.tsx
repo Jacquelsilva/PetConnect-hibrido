@@ -8,9 +8,10 @@ import {
   StyleSheet,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
-import { Header } from "@/components/ui/Header";
+import { BottomNavBar } from "@/components/ui/BottomNavBar";
 
 import { getSession } from "@/services/auth";
 import { getDatabase } from "@/database/Database";
@@ -25,27 +26,10 @@ function textoIdade(idade: number): string {
 }
 
 export function TelaFavoritos({ navigation }: FavoritosScreenProps) {
+  const insets = useSafeAreaInsets();
   const [animais, setAnimais] = useState<Animal[]>([]);
   const [idUsuario, setIdUsuario] = useState<number | null>(null);
   const [carregando, setCarregando] = useState(true);
-
-  const abas = [
-    {
-      titulo: "Favoritos",
-      icone: "heart" as const, // preenchido: é a tela atual
-      onPress: () => {},
-    },
-    {
-      titulo: "Solicitações",
-      icone: "document-text-outline" as const,
-      onPress: () => navigation.navigate("SolicitacoesUsuario"),
-    },
-    {
-      titulo: "Configurações",
-      icone: "settings-outline" as const,
-      onPress: () => navigation.navigate("Settings"),
-    },
-  ];
 
   useFocusEffect(
     useCallback(() => {
@@ -91,7 +75,6 @@ export function TelaFavoritos({ navigation }: FavoritosScreenProps) {
 
   function verSobre(animal: Animal) {
     if (!animal.id) return;
-    // Corrigido: a rota registrada no AppNavigator é "PetDetails"
     navigation.navigate("PetDetails", { id: animal.id });
   }
 
@@ -134,7 +117,11 @@ export function TelaFavoritos({ navigation }: FavoritosScreenProps) {
 
   return (
     <View style={styles.container}>
-      <Header title="Meus Favoritos" onBackPress={() => navigation.goBack()} />
+      <View style={[styles.topBar, { paddingTop: insets.top }]}>
+        <View style={styles.topBarConteudo}>
+          <Text style={styles.topBarTitulo}>Meus Favoritos</Text>
+        </View>
+      </View>
 
       <FlatList
         style={styles.flat}
@@ -151,19 +138,7 @@ export function TelaFavoritos({ navigation }: FavoritosScreenProps) {
         }
       />
 
-      {/* Barra de navegação inferior */}
-      <View style={styles.barra}>
-        {abas.map((aba) => (
-          <TouchableOpacity
-            key={aba.titulo}
-            style={styles.aba}
-            onPress={aba.onPress}
-          >
-            <Ionicons name={aba.icone} size={24} color="#0F766E" />
-            <Text style={styles.abaTexto}>{aba.titulo}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <BottomNavBar ativa="favoritos" />
     </View>
   );
 }
@@ -173,26 +148,41 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F8F9FA",
   },
+  topBar: {
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  topBarConteudo: {
+    height: 56,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topBarTitulo: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#2C3E50",
+  },
   flat: {
     flex: 1,
   },
   lista: {
-    padding: 16,
-    maxWidth: 480,
+    padding: 20,
+    maxWidth: 720,
     width: "100%",
     alignSelf: "center",
     flexGrow: 1,
   },
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 12,
-    marginBottom: 12,
+    marginBottom: 16,
     gap: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowRadius: 4,
     elevation: 2,
   },
   cardTopo: {
@@ -206,7 +196,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   fotoVazia: {
-    backgroundColor: "#E6F4F1",
+    backgroundColor: "#E8F5E9",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -218,8 +208,8 @@ const styles = StyleSheet.create({
   },
   nome: {
     fontSize: 17,
-    fontWeight: "bold",
-    color: "#333333",
+    fontWeight: "700",
+    color: "#2C3E50",
     marginBottom: 2,
   },
   detalhe: {
@@ -236,7 +226,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     backgroundColor: "#0F766E",
-    borderRadius: 10,
+    borderRadius: 8,
     paddingVertical: 11,
   },
   botaoVerTexto: {
@@ -250,28 +240,5 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingTop: 40,
     lineHeight: 22,
-  },
-  barra: {
-    flexDirection: "row",
-    backgroundColor: "#FFFFFF",
-    borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
-    paddingTop: 10,
-    paddingBottom: 14,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  aba: {
-    flex: 1,
-    alignItems: "center",
-    gap: 4,
-  },
-  abaTexto: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#0F766E",
   },
 });

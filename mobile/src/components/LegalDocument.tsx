@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Header } from "@/components/ui/Header";
 
 export interface LegalSection {
@@ -22,10 +23,15 @@ export function LegalDocument({
   sections,
   onBackPress,
 }: LegalDocumentProps) {
+  const insets = useSafeAreaInsets();
+
   return (
     <View style={styles.container}>
-      <Header title={title} onBackPress={onBackPress} />
-      <ScrollView contentContainerStyle={styles.content}>
+      <View style={{ paddingTop: insets.top, backgroundColor: "#FFFFFF" }}>
+        <Header title={title} onBackPress={onBackPress} />
+      </View>
+
+      <ScrollView style={styles.flex} contentContainerStyle={styles.content}>
         <View style={styles.card}>
           <Text style={styles.updated}>Última atualização: {updatedAt}</Text>
           <Text style={styles.intro}>{intro}</Text>
@@ -53,6 +59,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F8F9FA",
   },
+  flex: {
+    flex: 1,
+  },
   content: {
     padding: 20,
     paddingBottom: 40,
@@ -72,7 +81,7 @@ const styles = StyleSheet.create({
   },
   updated: {
     fontSize: 12,
-    color: "#7F8C8D",
+    color: "#666666",
     marginBottom: 12,
   },
   intro: {

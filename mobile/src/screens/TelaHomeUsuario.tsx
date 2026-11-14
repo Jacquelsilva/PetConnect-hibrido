@@ -9,8 +9,10 @@ import {
   StyleSheet,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
+import { BottomNavBar } from "@/components/ui/BottomNavBar";
 import { getSession } from "@/services/auth";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDatabase } from "@/database/Database";
@@ -36,6 +38,7 @@ function textoIdade(idade: number): string {
 }
 
 export function TelaHomeUsuario({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState("todos");
@@ -44,25 +47,6 @@ export function TelaHomeUsuario({ navigation }: Props) {
   const [idUsuario, setIdUsuario] = useState<number | null>(null);
   const [carregando, setCarregando] = useState(true);
 
-  const abas = [
-    {
-      titulo: "Favoritos",
-      icone: "heart-outline" as const,
-      onPress: () => navigation.navigate("Favoritos"),
-    },
-    {
-      titulo: "Solicitações",
-      icone: "document-text-outline" as const,
-      onPress: () => navigation.navigate("SolicitacoesUsuario"),
-    },
-    {
-      titulo: "Configurações",
-      icone: "settings-outline" as const,
-      onPress: () => navigation.navigate("Settings"),
-    },
-  ];
-
-  // Recarrega animais e favoritos toda vez que a tela volta a ficar em foco
   useFocusEffect(
     useCallback(() => {
       let ativo = true;
@@ -111,9 +95,9 @@ export function TelaHomeUsuario({ navigation }: Props) {
   }, [animais, busca, filtro]);
 
   function verSobre(animal: Animal) {
-  if (!animal.id) return;
-  navigation.navigate("PetDetails", { id: animal.id });
-}
+    if (!animal.id) return;
+    navigation.navigate("PetDetails", { id: animal.id });
+  }
 
   async function favoritar(animal: Animal) {
     if (!animal.id || idUsuario === null) return;
@@ -180,19 +164,24 @@ export function TelaHomeUsuario({ navigation }: Props) {
 
   const cabecalho = (
     <View>
-      <Text style={styles.saudacao}>Olá, {user?.name || "Usuário"}!</Text>
-      <Text style={styles.titulo}>Encontre seu novo amigo</Text>
-      <Text style={styles.subtitulo}>
-        Um novo companheiro pode estar esperando por você.
-      </Text>
+      <View style={styles.boasVindas}>
+        <Text style={styles.saudacao}>Olá, {user?.name || "Usuário"}!</Text>
+        <Text style={styles.titulo}>Encontre seu novo amigo</Text>
+        <Text style={styles.subtitulo}>
+          Um novo companheiro pode estar esperando por você.
+        </Text>
+      </View>
 
-      <TextInput
-        style={styles.busca}
-        placeholder="Buscar por nome do animal..."
-        placeholderTextColor="#999999"
-        value={busca}
-        onChangeText={setBusca}
-      />
+      <View style={styles.busca}>
+        <Ionicons name="search" size={20} color="#999999" />
+        <TextInput
+          style={styles.buscaInput}
+          placeholder="Buscar por nome do animal..."
+          placeholderTextColor="#999999"
+          value={busca}
+          onChangeText={setBusca}
+        />
+      </View>
 
       <View style={styles.filtros}>
         {FILTROS.map((f) => {
@@ -216,13 +205,20 @@ export function TelaHomeUsuario({ navigation }: Props) {
         })}
       </View>
 
-      <Text style={styles.secao}>ANIMAIS DISPONÍVEIS</Text>
+      <Text style={styles.secao}>Animais Disponíveis</Text>
     </View>
   );
 
   return (
     <View style={styles.container}>
+      <View style={[styles.topBar, { paddingTop: insets.top }]}>
+        <View style={styles.topBarConteudo}>
+          <Text style={styles.topBarTitulo}>Início</Text>
+        </View>
+      </View>
+
       <FlatList
+        style={styles.flat}
         data={animaisFiltrados}
         extraData={favoritos}
         keyExtractor={(item) => String(item.id)}
@@ -237,19 +233,7 @@ export function TelaHomeUsuario({ navigation }: Props) {
         }
       />
 
-      {/* Barra de navegação inferior */}
-      <View style={styles.barra}>
-        {abas.map((aba) => (
-          <TouchableOpacity
-            key={aba.titulo}
-            style={styles.aba}
-            onPress={aba.onPress}
-          >
-            <Ionicons name={aba.icone} size={24} color="#0F766E" />
-            <Text style={styles.abaTexto}>{aba.titulo}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <BottomNavBar ativa="inicio" />
     </View>
   );
 }
@@ -259,54 +243,90 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F8F9FA",
   },
+  topBar: {
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  topBarConteudo: {
+    height: 56,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topBarTitulo: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#2C3E50",
+  },
+  flat: {
+    flex: 1,
+  },
   lista: {
-    padding: 16,
-    paddingTop: 48,
-    maxWidth: 480,
+    padding: 20,
+    maxWidth: 720,
     width: "100%",
     alignSelf: "center",
     flexGrow: 1,
+  },
+  boasVindas: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   saudacao: {
     fontSize: 14,
     color: "#666666",
   },
   titulo: {
-    fontSize: 26,
-    fontWeight: "bold",
-    color: "#333333",
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#2C3E50",
     marginTop: 4,
   },
   subtitulo: {
-    fontSize: 15,
+    fontSize: 14,
     color: "#666666",
     marginTop: 4,
-    marginBottom: 20,
-    lineHeight: 22,
+    lineHeight: 20,
   },
   busca: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
     backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#CCCCCC",
     borderRadius: 12,
-    paddingVertical: 12,
     paddingHorizontal: 14,
+    marginBottom: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  buscaInput: {
+    flex: 1,
+    paddingVertical: 12,
     fontSize: 15,
     color: "#333333",
-    marginBottom: 14,
   },
   filtros: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    marginBottom: 18,
+    marginBottom: 20,
   },
   chip: {
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#CCCCCC",
+    borderColor: "#E5E7EB",
     backgroundColor: "#FFFFFF",
   },
   chipSelecionado: {
@@ -322,22 +342,21 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   secao: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#666666",
-    letterSpacing: 1,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#2C3E50",
     marginBottom: 12,
   },
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 12,
-    marginBottom: 12,
+    marginBottom: 16,
     gap: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowRadius: 4,
     elevation: 2,
   },
   cardTopo: {
@@ -351,7 +370,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   fotoVazia: {
-    backgroundColor: "#E6F4F1",
+    backgroundColor: "#E8F5E9",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -363,8 +382,8 @@ const styles = StyleSheet.create({
   },
   nome: {
     fontSize: 17,
-    fontWeight: "bold",
-    color: "#333333",
+    fontWeight: "700",
+    color: "#2C3E50",
     marginBottom: 2,
   },
   detalhe: {
@@ -381,7 +400,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     backgroundColor: "#0F766E",
-    borderRadius: 10,
+    borderRadius: 8,
     paddingVertical: 11,
   },
   botaoVerTexto: {
@@ -394,28 +413,5 @@ const styles = StyleSheet.create({
     color: "#666666",
     textAlign: "center",
     paddingTop: 24,
-  },
-  barra: {
-    flexDirection: "row",
-    backgroundColor: "#FFFFFF",
-    borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
-    paddingTop: 10,
-    paddingBottom: 14,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  aba: {
-    flex: 1,
-    alignItems: "center",
-    gap: 4,
-  },
-  abaTexto: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#0F766E",
   },
 });

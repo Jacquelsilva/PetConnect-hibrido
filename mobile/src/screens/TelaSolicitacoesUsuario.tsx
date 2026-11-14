@@ -1,19 +1,12 @@
 import React, { useCallback, useState } from "react";
-import {
-  Alert,
-  Platform,
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-} from "react-native";
+import { Alert, Platform, View, StyleSheet } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import { Ionicons } from "@expo/vector-icons";
 
 import {
   SolicitacoesBase,
   Solicitacao,
 } from "@/screens/SolicitacoesBase";
+import { BottomNavBar } from "@/components/ui/BottomNavBar";
 
 import { getSession } from "@/services/auth";
 import { getDatabase } from "@/database/Database";
@@ -50,24 +43,6 @@ function descricaoPorStatus(status: string): string {
 
 export function TelaSolicitacoesUsuario({ navigation }: Props) {
   const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>([]);
-
-  const abas = [
-    {
-      titulo: "Favoritos",
-      icone: "heart-outline" as const,
-      onPress: () => navigation.navigate("Favoritos"),
-    },
-    {
-      titulo: "Solicitações",
-      icone: "document-text" as const, // preenchido: é a tela atual
-      onPress: () => {},
-    },
-    {
-      titulo: "Configurações",
-      icone: "settings-outline" as const,
-      onPress: () => navigation.navigate("Settings"),
-    },
-  ];
 
   useFocusEffect(
     useCallback(() => {
@@ -130,23 +105,10 @@ export function TelaSolicitacoesUsuario({ navigation }: Props) {
           perfil="usuario"
           solicitacoes={solicitacoes}
           onVerDetalhes={verDetalhes}
-          onVoltar={() => navigation.goBack()}
         />
       </View>
 
-      {/* Barra de navegação inferior */}
-      <View style={styles.barra}>
-        {abas.map((aba) => (
-          <TouchableOpacity
-            key={aba.titulo}
-            style={styles.aba}
-            onPress={aba.onPress}
-          >
-            <Ionicons name={aba.icone} size={24} color="#0F766E" />
-            <Text style={styles.abaTexto}>{aba.titulo}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <BottomNavBar ativa="solicitacoes" />
     </View>
   );
 }
@@ -158,29 +120,6 @@ const styles = StyleSheet.create({
   },
   conteudo: {
     flex: 1,
-  },
-  barra: {
-    flexDirection: "row",
-    backgroundColor: "#FFFFFF",
-    borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
-    paddingTop: 10,
-    paddingBottom: 14,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  aba: {
-    flex: 1,
-    alignItems: "center",
-    gap: 4,
-  },
-  abaTexto: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#0F766E",
   },
 });
 

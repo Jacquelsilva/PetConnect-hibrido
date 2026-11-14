@@ -5,9 +5,9 @@ import {
   TextInput,
   ScrollView,
   StyleSheet,
-  StatusBar,
   Pressable,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -75,33 +75,25 @@ export function HomeBase({
   textoLista = "Confira as informações",
   textoVazio = "Nenhum resultado encontrado.",
 }: Props) {
+  const insets = useSafeAreaInsets();
+
   return (
     <View style={styles.container}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="#0F766E"
-      />
-
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Cabeçalho */}
-        <View style={styles.hero}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingTop: insets.top + 16 }}
+      >
+        <View style={styles.conteudo}>
           <View style={styles.topo}>
             <View style={styles.logo}>
-              <Ionicons
-                name="paw"
-                size={30}
-                color="#0F766E"
-              />
+              <Ionicons name="paw" size={28} color="#4CAF50" />
             </View>
 
             <Text style={styles.saudacao}>{saudacao}</Text>
             <Text style={styles.titulo}>{titulo}</Text>
             <Text style={styles.subtitulo}>{subtitulo}</Text>
           </View>
-        </View>
 
-        <View style={styles.conteudo}>
-          {/* Indicadores */}
           {indicadores.length > 0 && (
             <>
               <Text style={styles.tituloSecao}>RESUMO</Text>
@@ -109,26 +101,15 @@ export function HomeBase({
               <View style={styles.indicadores}>
                 {indicadores.map((item, index) => (
                   <View key={index} style={styles.cardIndicador}>
-                    <Ionicons
-                      name={item.icone}
-                      size={30}
-                      color="#0F766E"
-                    />
-
-                    <Text style={styles.valorIndicador}>
-                      {item.valor}
-                    </Text>
-
-                    <Text style={styles.nomeIndicador}>
-                      {item.titulo}
-                    </Text>
+                    <Ionicons name={item.icone} size={28} color="#4CAF50" />
+                    <Text style={styles.valorIndicador}>{item.valor}</Text>
+                    <Text style={styles.nomeIndicador}>{item.titulo}</Text>
                   </View>
                 ))}
               </View>
             </>
           )}
 
-          {/* Ações */}
           {acoes.length > 0 && (
             <>
               <Text style={styles.tituloSecao}>AÇÕES</Text>
@@ -139,40 +120,26 @@ export function HomeBase({
                   style={styles.botaoAcao}
                   onPress={acao.onPress}
                 >
-                  <Ionicons
-                    name={acao.icone}
-                    size={21}
-                    color="#FFFFFF"
-                  />
-
-                  <Text style={styles.textoAcao}>
-                    {acao.titulo}
-                  </Text>
+                  <Ionicons name={acao.icone} size={21} color="#FFFFFF" />
+                  <Text style={styles.textoAcao}>{acao.titulo}</Text>
                 </Pressable>
               ))}
             </>
           )}
 
-          {/* Pesquisa */}
           {onChangeBusca && (
             <View style={styles.busca}>
-              <Ionicons
-                name="search"
-                size={21}
-                color="#0F766E"
-              />
-
+              <Ionicons name="search" size={20} color="#999999" />
               <TextInput
                 style={styles.input}
                 placeholder={placeholderBusca}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#999999"
                 value={busca}
                 onChangeText={onChangeBusca}
               />
             </View>
           )}
 
-          {/* Filtros */}
           {filtros.length > 0 && (
             <ScrollView
               horizontal
@@ -180,19 +147,13 @@ export function HomeBase({
               style={styles.listaFiltros}
             >
               {filtros.map((filtro) => {
-                const ativo =
-                  filtroSelecionado === filtro.valor;
+                const ativo = filtroSelecionado === filtro.valor;
 
                 return (
                   <Pressable
                     key={filtro.valor}
-                    style={[
-                      styles.filtro,
-                      ativo && styles.filtroAtivo,
-                    ]}
-                    onPress={() =>
-                      onSelecionarFiltro?.(filtro.valor)
-                    }
+                    style={[styles.filtro, ativo && styles.filtroAtivo]}
+                    onPress={() => onSelecionarFiltro?.(filtro.valor)}
                   >
                     <Text
                       style={[
@@ -208,12 +169,9 @@ export function HomeBase({
             </ScrollView>
           )}
 
-          {/* Lista de cartões */}
           {cartoes.length > 0 && (
             <>
-              <Text style={styles.tituloSecao}>
-                {textoLista}
-              </Text>
+              <Text style={styles.tituloSecao}>{textoLista}</Text>
 
               {cartoes.map((cartao) => (
                 <Pressable
@@ -223,43 +181,27 @@ export function HomeBase({
                   disabled={!cartao.onPress}
                 >
                   <View style={styles.iconeCard}>
-                    <Ionicons
-                      name={cartao.icone}
-                      size={28}
-                      color="#0F766E"
-                    />
+                    <Ionicons name={cartao.icone} size={26} color="#4CAF50" />
                   </View>
 
                   <View style={styles.infoCard}>
-                    <Text style={styles.tituloCard}>
-                      {cartao.titulo}
-                    </Text>
-
-                    <Text style={styles.descricaoCard}>
-                      {cartao.descricao}
-                    </Text>
+                    <Text style={styles.tituloCard}>{cartao.titulo}</Text>
+                    <Text style={styles.descricaoCard}>{cartao.descricao}</Text>
 
                     {cartao.etiqueta && (
-                      <Text style={styles.etiqueta}>
-                        {cartao.etiqueta}
-                      </Text>
+                      <Text style={styles.etiqueta}>{cartao.etiqueta}</Text>
                     )}
                   </View>
 
-                  <Ionicons
-                    name="chevron-forward"
-                    size={22}
-                    color="#0F766E"
-                  />
+                  <Ionicons name="chevron-forward" size={20} color="#999999" />
                 </Pressable>
               ))}
             </>
           )}
 
-          {cartoes.length === 0 &&
-            (onChangeBusca || filtros.length > 0) && (
-              <Text style={styles.vazio}>{textoVazio}</Text>
-            )}
+          {cartoes.length === 0 && (onChangeBusca || filtros.length > 0) && (
+            <Text style={styles.vazio}>{textoVazio}</Text>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -269,53 +211,51 @@ export function HomeBase({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9F9F9",
+    backgroundColor: "#F8F9FA",
   },
-  hero: {
-    backgroundColor: "#0F766E",
-    paddingTop: 60,
-    paddingBottom: 38,
-    paddingHorizontal: 24,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+  conteudo: {
+    padding: 20,
+    paddingBottom: 40,
+    maxWidth: 720,
+    width: "100%",
+    alignSelf: "center",
   },
   topo: {
     alignItems: "flex-start",
+    marginBottom: 8,
   },
   logo: {
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#E8F5E9",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 20,
+    marginBottom: 16,
   },
   saudacao: {
-    color: "#CCFBF1",
+    color: "#666666",
     fontSize: 14,
   },
   titulo: {
-    color: "#FFFFFF",
-    fontSize: 28,
-    fontWeight: "bold",
-    marginTop: 3,
+    color: "#2C3E50",
+    fontSize: 26,
+    fontWeight: "700",
+    marginTop: 4,
   },
   subtitulo: {
-    color: "#CCFBF1",
+    color: "#666666",
     fontSize: 15,
-    marginTop: 7,
-  },
-  conteudo: {
-    padding: 22,
-    paddingBottom: 40,
+    marginTop: 4,
+    lineHeight: 22,
   },
   tituloSecao: {
-    color: "#0F766E",
-    fontSize: 14,
-    fontWeight: "bold",
+    color: "#666666",
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 1,
     marginTop: 24,
-    marginBottom: 15,
+    marginBottom: 12,
   },
   indicadores: {
     flexDirection: "row",
@@ -326,95 +266,104 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: "45%",
     backgroundColor: "#FFFFFF",
-    borderRadius: 20,
+    borderRadius: 12,
     padding: 18,
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
     elevation: 2,
   },
   valorIndicador: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#16803C",
-    marginTop: 7,
+    fontSize: 26,
+    fontWeight: "700",
+    color: "#2C3E50",
+    marginTop: 6,
   },
   nomeIndicador: {
     fontSize: 13,
-    color: "#6B7280",
+    color: "#666666",
     textAlign: "center",
     marginTop: 3,
   },
   botaoAcao: {
-    backgroundColor: "#16803C",
-    borderRadius: 30,
-    padding: 16,
+    backgroundColor: "#0F766E",
+    borderRadius: 8,
+    padding: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    marginBottom: 13,
+    marginBottom: 12,
   },
   textoAcao: {
     color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "500",
+    fontSize: 15,
+    fontWeight: "600",
   },
   busca: {
-    height: 52,
     backgroundColor: "#FFFFFF",
-    borderRadius: 18,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 15,
+    paddingHorizontal: 14,
+    paddingVertical: 4,
     gap: 10,
     marginTop: 20,
   },
   input: {
     flex: 1,
     fontSize: 15,
-    color: "#1F2937",
+    color: "#333333",
+    paddingVertical: 10,
   },
   listaFiltros: {
-    marginTop: 15,
+    marginTop: 14,
     flexGrow: 0,
   },
   filtro: {
-    paddingVertical: 9,
-    paddingHorizontal: 18,
-    borderRadius: 22,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#D1D5DB",
-    marginRight: 9,
+    borderColor: "#E5E7EB",
+    marginRight: 8,
   },
   filtroAtivo: {
     backgroundColor: "#0F766E",
     borderColor: "#0F766E",
   },
   textoFiltro: {
-    color: "#374151",
-    fontSize: 13,
+    color: "#333333",
+    fontSize: 14,
   },
   textoFiltroAtivo: {
     color: "#FFFFFF",
-    fontWeight: "bold",
+    fontWeight: "600",
   },
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 15,
-    marginBottom: 13,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
     elevation: 2,
   },
   iconeCard: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: "#CCFBF1",
+    backgroundColor: "#E8F5E9",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -423,23 +372,23 @@ const styles = StyleSheet.create({
   },
   tituloCard: {
     fontSize: 16,
-    fontWeight: "bold",
-    color: "#0F766E",
+    fontWeight: "700",
+    color: "#2C3E50",
   },
   descricaoCard: {
-    color: "#6B7280",
+    color: "#666666",
     fontSize: 13,
     marginTop: 4,
   },
   etiqueta: {
-    color: "#16803C",
+    color: "#4CAF50",
     fontSize: 12,
-    fontWeight: "bold",
-    marginTop: 7,
+    fontWeight: "600",
+    marginTop: 6,
   },
   vazio: {
     textAlign: "center",
-    color: "#9CA3AF",
+    color: "#666666",
     marginTop: 25,
   },
 });

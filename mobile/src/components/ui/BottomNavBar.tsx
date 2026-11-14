@@ -1,54 +1,71 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useNavigation, CommonActions } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
-import type { RootStackParamList } from "@/types/navigation";
-
-type Aba = "favoritos" | "solicitacoes" | "settings";
+type Aba = "inicio" | "favoritos" | "solicitacoes" | "settings";
 
 type Props = {
   ativa?: Aba;
 };
 
 export function BottomNavBar({ ativa }: Props) {
-  const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
+
+  const ir = (rota: string) => {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: rota }],
+      })
+    );
+  };
 
   const abas = [
+    {
+      chave: "inicio" as Aba,
+      titulo: "Início",
+      icone: "home-outline" as const,
+      iconeAtivo: "home" as const,
+      rota: "HomeUsuario",
+    },
     {
       chave: "favoritos" as Aba,
       titulo: "Favoritos",
       icone: "heart-outline" as const,
       iconeAtivo: "heart" as const,
-      onPress: () => navigation.navigate("Favoritos"),
+      rota: "Favoritos",
     },
     {
       chave: "solicitacoes" as Aba,
       titulo: "Solicitações",
       icone: "document-text-outline" as const,
       iconeAtivo: "document-text" as const,
-      onPress: () => navigation.navigate("SolicitacoesUsuario"),
+      rota: "SolicitacoesUsuario",
     },
     {
       chave: "settings" as Aba,
       titulo: "Configurações",
       icone: "settings-outline" as const,
       iconeAtivo: "settings" as const,
-      onPress: () => navigation.navigate("Settings"),
+      rota: "Settings",
     },
   ];
 
   return (
-    <View style={styles.barra}>
+    <View
+      style={[styles.barra, { paddingBottom: Math.max(insets.bottom, 14) }]}
+    >
       {abas.map((aba) => {
         const selecionada = aba.chave === ativa;
         return (
           <TouchableOpacity
-            key={aba.titulo}
+            key={aba.chave}
             style={styles.aba}
-            onPress={selecionada ? undefined : aba.onPress}
+            activeOpacity={0.7}
+            onPress={selecionada ? undefined : () => ir(aba.rota)}
           >
             <Ionicons
               name={selecionada ? aba.iconeAtivo : aba.icone}
@@ -70,7 +87,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#E5E7EB",
     paddingTop: 10,
-    paddingBottom: 14,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.05,

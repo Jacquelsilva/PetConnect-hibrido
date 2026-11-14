@@ -9,13 +9,14 @@ import {
   Alert,
   Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Header } from "@/components/ui/Header";
 import { getUserWhatsapp } from "@/services/auth";
 import type { HelpSupportScreenProps } from "@/types/navigation";
 
 const SUPPORT_EMAIL = "contato@petconnect.com.br";
-const FALLBACK_WHATSAPP = "5519999999999"; // usado se o usuário não tiver número no banco
+const FALLBACK_WHATSAPP = "5519999999999";
 const APP_VERSION = "1.0.0";
 
 interface FaqItem {
@@ -106,6 +107,7 @@ function formatPhone(digits: string): string {
 }
 
 export function HelpSupportScreen({ navigation }: HelpSupportScreenProps) {
+  const insets = useSafeAreaInsets();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [userWhatsapp, setUserWhatsapp] = useState<string | null>(null);
 
@@ -144,8 +146,11 @@ export function HelpSupportScreen({ navigation }: HelpSupportScreenProps) {
 
   return (
     <View style={styles.container}>
-      <Header title="Ajuda e Suporte" onBackPress={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={styles.content}>
+      <View style={{ paddingTop: insets.top, backgroundColor: "#FFFFFF" }}>
+        <Header title="Ajuda e Suporte" onBackPress={() => navigation.goBack()} />
+      </View>
+
+      <ScrollView style={styles.flex} contentContainerStyle={styles.content}>
         <Text style={styles.menuTitle}>Perguntas frequentes</Text>
         <View style={styles.card}>
           {FAQ.map((item, index) => {
@@ -182,7 +187,9 @@ export function HelpSupportScreen({ navigation }: HelpSupportScreenProps) {
             <Ionicons name="logo-whatsapp" size={22} color="#25D366" />
             <View style={styles.rowTextBox}>
               <Text style={styles.rowText}>WhatsApp</Text>
-              <Text style={styles.rowDescription}>{formatPhone(whatsappNumber)}</Text>
+              <Text style={styles.rowDescription}>
+                {formatPhone(whatsappNumber)}
+              </Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#999" />
           </Pressable>
@@ -191,7 +198,9 @@ export function HelpSupportScreen({ navigation }: HelpSupportScreenProps) {
             <Ionicons name="bug-outline" size={22} color="#555" />
             <View style={styles.rowTextBox}>
               <Text style={styles.rowText}>Reportar um problema</Text>
-              <Text style={styles.rowDescription}>Algo não está funcionando como deveria</Text>
+              <Text style={styles.rowDescription}>
+                Algo não está funcionando como deveria
+              </Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#999" />
           </Pressable>
@@ -199,7 +208,10 @@ export function HelpSupportScreen({ navigation }: HelpSupportScreenProps) {
 
         <Text style={styles.menuTitle}>Informações</Text>
         <View style={styles.card}>
-          <Pressable style={styles.row} onPress={() => navigation.navigate("PrivacyPolicy")}>
+          <Pressable
+            style={styles.row}
+            onPress={() => navigation.navigate("PrivacyPolicy")}
+          >
             <Ionicons name="document-text-outline" size={22} color="#555" />
             <View style={styles.rowTextBox}>
               <Text style={styles.rowText}>Política de privacidade</Text>
@@ -207,7 +219,10 @@ export function HelpSupportScreen({ navigation }: HelpSupportScreenProps) {
             <Ionicons name="chevron-forward" size={20} color="#999" />
           </Pressable>
           <View style={styles.divider} />
-          <Pressable style={styles.row} onPress={() => navigation.navigate("Termsofuse")}>
+          <Pressable
+            style={styles.row}
+            onPress={() => navigation.navigate("Termsofuse")}
+          >
             <Ionicons name="reader-outline" size={22} color="#555" />
             <View style={styles.rowTextBox}>
               <Text style={styles.rowText}>Termos de uso</Text>
@@ -226,6 +241,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F8F9FA",
+  },
+  flex: {
+    flex: 1,
   },
   content: {
     padding: 20,
@@ -263,12 +281,12 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   rowText: {
-    fontSize: 16,
+    fontSize: 15,
     color: "#333333",
   },
   rowDescription: {
     fontSize: 12,
-    color: "#7F8C8D",
+    color: "#666666",
     marginTop: 2,
   },
   question: {
@@ -286,7 +304,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: "#EFEFEF",
+    backgroundColor: "#F0F0F0",
   },
   version: {
     textAlign: "center",

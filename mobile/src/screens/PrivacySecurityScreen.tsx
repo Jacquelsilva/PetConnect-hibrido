@@ -10,6 +10,7 @@ import {
   TextInput,
   Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Header } from "@/components/ui/Header";
 import { Button } from "@/components/ui/Button";
@@ -49,6 +50,7 @@ function confirmAction(
 }
 
 export function PrivacySecurityScreen({ navigation }: PrivacySecurityScreenProps) {
+  const insets = useSafeAreaInsets();
   const [settings, setSettings] = useState<PrivacySettings>(
     DEFAULT_PRIVACY_SETTINGS
   );
@@ -62,7 +64,6 @@ export function PrivacySecurityScreen({ navigation }: PrivacySecurityScreenProps
   const [savingPassword, setSavingPassword] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // Carrega as preferências salvas ao abrir a tela
   useEffect(() => {
     let active = true;
     (async () => {
@@ -80,7 +81,6 @@ export function PrivacySecurityScreen({ navigation }: PrivacySecurityScreenProps
     };
   }, []);
 
-  // Atualiza na hora e salva; se falhar, volta ao valor anterior
   const toggleSetting = useCallback(
     async (key: keyof PrivacySettings, value: boolean) => {
       setSettings((s) => ({ ...s, [key]: value }));
@@ -132,8 +132,6 @@ export function PrivacySecurityScreen({ navigation }: PrivacySecurityScreenProps
     }
   };
 
-  // Só remove a sessão. Não limpa o storage inteiro, senão outros
-  // dados guardados no aparelho seriam apagados no logout.
   const finishSession = async () => {
     try {
       await clearSession();
@@ -190,16 +188,26 @@ export function PrivacySecurityScreen({ navigation }: PrivacySecurityScreenProps
         value={settings[key]}
         onValueChange={(v) => toggleSetting(key, v)}
         disabled={loadingSettings}
-        trackColor={{ false: "#D0D0D0", true: "#A5D6A7" }}
-        thumbColor={settings[key] ? "#4CAF50" : "#F4F4F4"}
+        trackColor={{ false: "#D1D5DB", true: "#A5D6A7" }}
+        thumbColor={settings[key] ? "#4CAF50" : "#FFFFFF"}
       />
     </View>
   );
 
   return (
     <View style={styles.container}>
-      <Header title="Privacidade e Segurança" onBackPress={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={styles.content}>
+      <View style={{ paddingTop: insets.top, backgroundColor: "#FFFFFF" }}>
+        <Header
+          title="Privacidade e Segurança"
+          onBackPress={() => navigation.goBack()}
+        />
+      </View>
+
+      <ScrollView
+        style={styles.flex}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text style={styles.menuTitle}>Privacidade</Text>
         <View style={styles.card}>
           {renderSwitchRow(
@@ -313,7 +321,10 @@ export function PrivacySecurityScreen({ navigation }: PrivacySecurityScreenProps
 
         <Text style={styles.menuTitle}>Dados e conta</Text>
         <View style={styles.card}>
-          <Pressable style={styles.row} onPress={() => navigation.navigate("PrivacyPolicy")}>
+          <Pressable
+            style={styles.row}
+            onPress={() => navigation.navigate("PrivacyPolicy")}
+          >
             <Ionicons name="document-text-outline" size={22} color="#555" />
             <View style={styles.rowTextBox}>
               <Text style={styles.rowText}>Política de privacidade</Text>
@@ -321,7 +332,10 @@ export function PrivacySecurityScreen({ navigation }: PrivacySecurityScreenProps
             <Ionicons name="chevron-forward" size={20} color="#999" />
           </Pressable>
           <View style={styles.divider} />
-          <Pressable style={styles.row} onPress={() => navigation.navigate("Termsofuse")}>
+          <Pressable
+            style={styles.row}
+            onPress={() => navigation.navigate("Termsofuse")}
+          >
             <Ionicons name="reader-outline" size={22} color="#555" />
             <View style={styles.rowTextBox}>
               <Text style={styles.rowText}>Termos de uso</Text>
@@ -353,6 +367,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F8F9FA",
+  },
+  flex: {
+    flex: 1,
   },
   content: {
     padding: 20,
@@ -390,17 +407,17 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   rowText: {
-    fontSize: 16,
+    fontSize: 15,
     color: "#333333",
   },
   rowDescription: {
     fontSize: 12,
-    color: "#7F8C8D",
+    color: "#666666",
     marginTop: 2,
   },
   divider: {
     height: 1,
-    backgroundColor: "#EFEFEF",
+    backgroundColor: "#F0F0F0",
   },
   form: {
     paddingBottom: 16,
@@ -408,13 +425,13 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: "#DADADA",
+    borderColor: "#E5E7EB",
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
     color: "#333333",
-    backgroundColor: "#FAFAFA",
+    backgroundColor: "#F8F9FA",
   },
   showPasswordRow: {
     flexDirection: "row",
@@ -431,7 +448,7 @@ const styles = StyleSheet.create({
   },
   cancelLinkText: {
     fontSize: 14,
-    color: "#7F8C8D",
+    color: "#666666",
   },
   dangerBox: {
     backgroundColor: "#FFF5F5",

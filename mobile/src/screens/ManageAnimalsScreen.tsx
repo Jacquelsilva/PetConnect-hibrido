@@ -10,9 +10,10 @@ import {
   Platform,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Header } from "@/components/ui/Header";
 import { Button } from "@/components/ui/Button";
+import { BottomNavBarOng } from "@/components/ui/BottomNavBarOng";
 
 import { getSession } from "@/services/auth";
 import { getDatabase } from "@/database/Database";
@@ -55,6 +56,7 @@ function textoIdade(idade: number): string {
 }
 
 export function ManageAnimalsScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const [animais, setAnimais] = useState<Animal[]>([]);
   const [carregando, setCarregando] = useState(true);
 
@@ -155,9 +157,14 @@ export function ManageAnimalsScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <Header title="Gerenciar Animais" onBackPress={() => navigation.goBack()} />
+      <View style={[styles.topBar, { paddingTop: insets.top }]}>
+        <View style={styles.topBarConteudo}>
+          <Text style={styles.topBarTitulo}>Gerenciar Animais</Text>
+        </View>
+      </View>
 
       <FlatList
+        style={styles.flat}
         data={animais}
         keyExtractor={(item) => String(item.id)}
         renderItem={renderItem}
@@ -177,6 +184,8 @@ export function ManageAnimalsScreen({ navigation }: Props) {
           )
         }
       />
+
+      <BottomNavBarOng ativa="animais" />
     </View>
   );
 }
@@ -185,6 +194,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F8F9FA",
+  },
+  topBar: {
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  topBarConteudo: {
+    height: 56,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topBarTitulo: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#2C3E50",
+  },
+  flat: {
+    flex: 1,
   },
   lista: {
     padding: 16,
