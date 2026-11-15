@@ -1,4 +1,4 @@
-import React from "react";
+import React, { createElement } from "react";
 import {
   View,
   Text,
@@ -50,10 +50,10 @@ export function SolicitacoesBase({
 
   return (
     <View style={styles.container}>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor="#FFFFFF"
-      />
+      {createElement(StatusBar as any, {
+        barStyle: "dark-content",
+        backgroundColor: "#FFFFFF",
+      })}
 
       {/* Cabeçalho */}
       <View style={styles.cabecalho}>

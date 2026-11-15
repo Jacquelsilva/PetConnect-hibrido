@@ -70,10 +70,7 @@ export async function clearSession(): Promise<void> {
   }
 }
 
-<<<<<<< HEAD
-=======
 // Firebase & Local Hybrid Login
->>>>>>> 1fae836 (feat(layout): refine MainLayout navigation visibility and Google OAuth flow)
 export async function loginUser(
   credentials: LoginCredentials
 ): Promise<AuthResponse> {
@@ -393,47 +390,11 @@ export async function deleteAccount(): Promise<void> {
     return;
   }
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 1fae836 (feat(layout): refine MainLayout navigation visibility and Google OAuth flow)
   if (isLocalToken(session.token)) {
     const dbSqlite = await getDatabase();
     const id = Number(session.user.id);
 
-<<<<<<< HEAD
-    // As tabelas precisam existir antes da transação
-    await db.execAsync(`
-      CREATE TABLE IF NOT EXISTS privacidade (
-        tipo TEXT NOT NULL,
-        id_conta INTEGER NOT NULL,
-        perfil_publico INTEGER NOT NULL DEFAULT 1,
-        mostrar_telefone INTEGER NOT NULL DEFAULT 0,
-        mostrar_email INTEGER NOT NULL DEFAULT 0,
-        compartilhar_localizacao INTEGER NOT NULL DEFAULT 1,
-        PRIMARY KEY (tipo, id_conta)
-      );
-      CREATE TABLE IF NOT EXISTS foto_perfil (
-        tipo TEXT NOT NULL,
-        id_conta INTEGER NOT NULL,
-        foto TEXT NOT NULL,
-        PRIMARY KEY (tipo, id_conta)
-      );
-    `);
-
-    await db.withTransactionAsync(async () => {
-      await db.runAsync(
-        "DELETE FROM privacidade WHERE tipo = ? AND id_conta = ?",
-        [session.user.type, id]
-      );
-      await db.runAsync(
-        "DELETE FROM foto_perfil WHERE tipo = ? AND id_conta = ?",
-        [session.user.type, id]
-      );
-
-=======
     await dbSqlite.withTransactionAsync(async () => {
->>>>>>> 1fae836 (feat(layout): refine MainLayout navigation visibility and Google OAuth flow)
       if (session.user.type === "ong") {
         const animaisDaOng = `SELECT CAST(id AS TEXT) FROM animais WHERE id_ong = ?`;
         await dbSqlite.runAsync(

@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { createElement } from "react";
 
 import {
   Text,
@@ -25,10 +25,10 @@ export function TelaEscolhaCadastro({ navigation }: Props) {
   return (
     <View style={styles.container}>
 
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="#0F766E"
-      />
+      {createElement(StatusBar as any, {
+        barStyle: "light-content",
+        backgroundColor: "#0F766E",
+      })}
 
       {/* Cabeçalho */}
       <View style={styles.hero}>

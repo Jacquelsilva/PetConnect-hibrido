@@ -1,4 +1,4 @@
-import React from "react";
+import React, { createElement } from "react";
 import {
   View,
   Text,
@@ -77,10 +77,10 @@ export function HomeBase({
 }: Props) {
   return (
     <View style={styles.container}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="#0F766E"
-      />
+      {createElement(StatusBar as any, {
+        barStyle: "light-content",
+        backgroundColor: "#0F766E",
+      })}
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Cabeçalho */}

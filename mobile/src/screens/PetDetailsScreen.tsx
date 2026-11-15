@@ -83,7 +83,7 @@ export function PetDetailsScreen({ navigation, route }: Props) {
       };
 
   const handleSolicitacao = () => {
-    navigation.navigate("solicitaradocao", { petId: petId || animal?.id });
+    navigation.navigate("solicitaradocao", { id: petId || animal?.id || 0 });
   };
 
   return (
