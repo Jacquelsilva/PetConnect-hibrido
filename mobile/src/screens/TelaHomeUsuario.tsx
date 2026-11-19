@@ -1,25 +1,15 @@
 import React, { useCallback, useMemo, useState } from "react";
-import {
-  Text,
-  View,
-  Image,
-  FlatList,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-} from "react-native";
+import {Text,View,Image,FlatList,TextInput,TouchableOpacity,StyleSheet } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-
 import { BottomNavBar } from "@/components/ui/BottomNavBar";
 import { getSession } from "@/services/auth";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDatabase } from "@/database/Database";
 import { listarAnimais } from "@/database/AnimalDAO";
 import { listarIdsFavoritos, alternarFavorito } from "@/database/FavoritosDAO";
-
-import type { Animal } from "@/models/types";
+ import type { Animal } from "@/models/types";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "@/types/navigation";
 

@@ -6,6 +6,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { LoginScreen } from "@/screens/LoginScreen";
+import { EsqueciSenhaScreen } from "@/screens/EsqueciSenhaScreen";
 import TelaCadastroUsuario from "@/screens/TelaCadastroUsuario";
 import TelaCadastroOng from "@/screens/TelaCadastroOng";
 
@@ -87,6 +88,7 @@ export function AppNavigator() {
           }}
         >
           <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="EsqueciSenha" component={EsqueciSenhaScreen} />
 
           <Stack.Screen name="CadastroUsuario" component={TelaCadastroUsuario} />
           <Stack.Screen name="CadastroOng" component={TelaCadastroOng} />

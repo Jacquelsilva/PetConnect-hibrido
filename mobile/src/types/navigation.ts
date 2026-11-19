@@ -2,6 +2,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 export type RootStackParamList = {
   Login: undefined;
+  EsqueciSenha: { tipo?: "adotante" | "ong" } | undefined;
   EscolhaCadastro: undefined;
   CadastroUsuario: undefined;
   CadastroOng: undefined;
@@ -10,7 +11,7 @@ export type RootStackParamList = {
   SolicitacoesUsuario: undefined;
   SolicitacoesOngs: undefined;
   Settings: undefined;
- PetDetails: { id: number }; 
+  PetDetails: { id: number };
   Favoritos: undefined;
   EditarPerfil: undefined;
   Privacyandsecurity: undefined;
@@ -22,13 +23,16 @@ export type RootStackParamList = {
   editanimal: { id: number };
   animaldetails: { id: number };
   solicitaradocao: { id: number };
-
 };
-
 
 export type LoginScreenProps = NativeStackScreenProps<
   RootStackParamList,
   "Login"
+>;
+
+export type EsqueciSenhaScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  "EsqueciSenha"
 >;
 
 export type EscolhaCadastroProps = NativeStackScreenProps<

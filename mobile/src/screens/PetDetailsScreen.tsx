@@ -1,5 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Image, Alert } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Image,
+  Alert,
+  Linking,
+  Platform,
+} from "react-native";
+import MapView, { Marker } from "react-native-maps";
+import * as Location from "expo-location";
 import { Header } from "@/components/ui/Header";
 import { Button } from "@/components/ui/Button";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -10,6 +21,17 @@ import { buscarAnimal } from "@/database/AnimalDAO";
 import type { Animal } from "@/models/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "PetDetails">;
+
+type Coordenadas = { latitude: number; longitude: number };
+
+type OngRow = {
+  nome: string | null;
+  telefone: string | null;
+  endereco: string | null;
+  cep: string | null;
+  cidade: string | null;
+  estado: string | null;
+};
 
 function textoIdade(idade: number): string {
   if (idade === 0) return "Menos de 1 ano";
@@ -24,27 +46,63 @@ export function PetDetailsScreen({ navigation, route }: Props) {
   const [animal, setAnimal] = useState<Animal | null>(initialPet || null);
   const [ongNome, setOngNome] = useState<string>("ONG Parceira PetConnect");
   const [ongTelefone, setOngTelefone] = useState<string>("(11) 99999-9999");
+  const [ongEndereco, setOngEndereco] = useState<string>("");
+  const [coords, setCoords] = useState<Coordenadas | null>(null);
   const [carregando, setCarregando] = useState<boolean>(!initialPet && !!petId);
 
   useEffect(() => {
     let ativo = true;
+
     (async () => {
       try {
         const db = await getDatabase();
         let targetAnimal = animal;
+
         if (!targetAnimal && petId) {
           targetAnimal = await buscarAnimal(db, Number(petId));
           if (ativo && targetAnimal) setAnimal(targetAnimal);
         }
 
         if (targetAnimal?.id_ong) {
-          const ong = await db.getFirstAsync<{ nome: string; telefone: string }>(
-            "SELECT nome, telefone FROM ongs WHERE id = ?",
+          const ong = await db.getFirstAsync<OngRow>(
+            "SELECT nome, telefone, endereco, cep, cidade, estado FROM ongs WHERE id = ?",
             [targetAnimal.id_ong]
           );
+
           if (ong && ativo) {
             if (ong.nome) setOngNome(ong.nome);
             if (ong.telefone) setOngTelefone(ong.telefone);
+
+            const enderecoCompleto = [
+              ong.endereco,
+              ong.cidade,
+              ong.estado,
+              ong.cep,
+              "Brasil",
+            ]
+              .filter(Boolean)
+              .join(", ");
+
+            // Só considera endereço válido se a ONG tiver ao menos rua ou CEP
+            if (ong.endereco || ong.cep) {
+              setOngEndereco(enderecoCompleto);
+
+              // Geocodificação separada: se falhar, o resto da tela continua funcionando
+              try {
+                const resultado = await Location.geocodeAsync(enderecoCompleto);
+                if (ativo && resultado.length > 0) {
+                  setCoords({
+                    latitude: resultado[0].latitude,
+                    longitude: resultado[0].longitude,
+                  });
+                }
+              } catch (geoError) {
+                console.warn(
+                  "Não foi possível geocodificar o endereço da ONG:",
+                  geoError
+                );
+              }
+            }
           }
         }
       } catch (e) {
@@ -53,6 +111,7 @@ export function PetDetailsScreen({ navigation, route }: Props) {
         if (ativo) setCarregando(false);
       }
     })();
+
     return () => {
       ativo = false;
     };
@@ -68,7 +127,9 @@ export function PetDetailsScreen({ navigation, route }: Props) {
         descricao: animal.descricao || "Sem descrição informada.",
         ongNome,
         ongTelefone,
-        foto: animal.foto_url || "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80",
+        foto:
+          animal.foto_url ||
+          "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80",
       }
     : routeParams.pet || {
         nome: "Thor",
@@ -83,20 +144,45 @@ export function PetDetailsScreen({ navigation, route }: Props) {
       };
 
   const handleSolicitacao = () => {
-  const idAnimal = animal?.id ?? petId;
+    const idAnimal = animal?.id ?? petId;
 
-  if (idAnimal === undefined || idAnimal === null) {
-    Alert.alert(
-      "Erro",
-      "Não foi possível identificar este animal. Volte e tente novamente."
-    );
-    return;
-  }
+    if (idAnimal === undefined || idAnimal === null) {
+      Alert.alert(
+        "Erro",
+        "Não foi possível identificar este animal. Volte e tente novamente."
+      );
+      return;
+    }
 
-  navigation.navigate("solicitaradocao", {
-    id: Number(idAnimal),
-  });
-};
+    navigation.navigate("solicitaradocao", {
+      id: Number(idAnimal),
+    });
+  };
+
+  const handleTracarRota = async () => {
+    const destino = coords
+      ? `${coords.latitude},${coords.longitude}`
+      : ongEndereco
+      ? encodeURIComponent(ongEndereco)
+      : "";
+
+    if (!destino) {
+      Alert.alert("Ops", "A ONG não possui um endereço cadastrado.");
+      return;
+    }
+
+    const url =
+      Platform.OS === "ios"
+        ? `http://maps.apple.com/?daddr=${destino}&dirflg=d`
+        : `https://www.google.com/maps/dir/?api=1&destination=${destino}&travelmode=driving`;
+
+    try {
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert("Erro", "Não foi possível abrir o aplicativo de mapas.");
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Header title={pet.nome} onBackPress={() => navigation.goBack()} />
@@ -137,6 +223,50 @@ export function PetDetailsScreen({ navigation, route }: Props) {
               </View>
             </View>
           </View>
+
+          <Text style={styles.sectionTitle}>Localização</Text>
+
+          {ongEndereco ? (
+            <Text style={styles.ongAddress}>{ongEndereco}</Text>
+          ) : (
+            <Text style={styles.ongAddress}>
+              Endereço da ONG não informado.
+            </Text>
+          )}
+
+          {coords && (
+            <View style={styles.mapContainer}>
+              <MapView
+                style={styles.map}
+                initialRegion={{
+                  latitude: coords.latitude,
+                  longitude: coords.longitude,
+                  latitudeDelta: 0.01,
+                  longitudeDelta: 0.01,
+                }}
+                scrollEnabled={false}
+                zoomEnabled={false}
+                pitchEnabled={false}
+                rotateEnabled={false}
+              >
+                <Marker
+                  coordinate={coords}
+                  title={pet.ongNome}
+                  description={pet.ongTelefone}
+                />
+              </MapView>
+            </View>
+          )}
+
+          {!!ongEndereco && (
+            <View style={styles.routeButton}>
+              <Button
+                title="Traçar rota"
+                variant="secondary"
+                onPress={handleTracarRota}
+              />
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -253,6 +383,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#6B7280",
     marginTop: 2,
+  },
+  ongAddress: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginBottom: 8,
+  },
+  mapContainer: {
+    height: 200,
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  map: {
+    flex: 1,
+  },
+  routeButton: {
+    marginTop: 12,
   },
   footer: {
     padding: 16,

@@ -1,4 +1,3 @@
-
 import * as WebBrowser from "expo-web-browser";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
@@ -48,6 +47,13 @@ export interface AuthResponse {
     whatsapp?: string;
     needsProfileCompletion?: boolean;
   };
+}
+
+export interface ResetPasswordParams {
+  tipo: "adotante" | "ong";
+  document: string;
+  email: string;
+  novaSenha: string;
 }
 
 // ==========================================
@@ -426,7 +432,7 @@ function isLocalToken(token?: string): boolean {
 }
 
 // ==========================================
-// ALTERAR SENHA
+// ALTERAR SENHA (USUÁRIO LOGADO)
 // ==========================================
 
 export async function changePassword(
@@ -477,6 +483,59 @@ export async function changePassword(
 
   throw new Error(
     "Alteração de senha Firebase ainda não implementada."
+  );
+}
+
+// ==========================================
+// ESQUECI MINHA SENHA (SEM ESTAR LOGADO)
+// ==========================================
+// Confirma a identidade pelo CPF/CNPJ + e-mail cadastrados no SQLite
+// e grava a nova senha. A senha é salva da mesma forma que o
+// loginUser e o changePassword usam (texto, sem hash).
+
+export async function redefinirSenha({
+  tipo,
+  document,
+  email,
+  novaSenha,
+}: ResetPasswordParams): Promise<void> {
+
+  const documento = document.replace(/\D/g, "");
+  const emailLimpo = email.trim().toLowerCase();
+
+  if (!documento || !emailLimpo || !novaSenha) {
+    throw new Error("Preencha todos os campos.");
+  }
+
+  if (novaSenha.length < 6) {
+    throw new Error("A senha deve ter pelo menos 6 caracteres.");
+  }
+
+  const dbSqlite = await getDatabase();
+
+  const isOng = tipo === "ong";
+  const tabela = isOng ? "ongs" : "usuarios";
+  const colunaDoc = isOng ? "cnpj" : "cpf";
+
+  // Compara só os dígitos, mesmo que o documento tenha sido salvo com máscara
+  const conta = await dbSqlite.getFirstAsync<{ id: number }>(
+    `SELECT id FROM ${tabela}
+     WHERE REPLACE(REPLACE(REPLACE(${colunaDoc}, '.', ''), '-', ''), '/', '') = ?
+       AND LOWER(TRIM(email)) = ?`,
+    [documento, emailLimpo]
+  );
+
+  if (!conta) {
+    throw new Error(
+      `Não encontramos uma conta com esse ${
+        isOng ? "CNPJ" : "CPF"
+      } e e-mail.`
+    );
+  }
+
+  await dbSqlite.runAsync(
+    `UPDATE ${tabela} SET senha = ? WHERE id = ?`,
+    [novaSenha, conta.id]
   );
 }
 
