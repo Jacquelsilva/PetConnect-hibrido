@@ -25,65 +25,75 @@ Visualização dos detalhes dos animais.
 Integração entre usuários e ONGs.
 
 ## Arquetetura
+```text
 mobile/
-├── .env.example                     # Exemplo de variáveis de ambiente (API URL, Google Client ID e Firebase config)
+├── .env.example                     # Exemplo de variáveis de ambiente (API URL, Google Client ID e Firebase Config)
 ├── .gitignore                       # Arquivos e pastas ignorados pelo Git
-├── AGENTS.md                        # Instruções e diretrizes de agentes
-├── app.json                         # Configuração do projeto Expo
-├── App.tsx                          # Ponto de entrada com AuthProvider e AppNavigator
+├── AGENTS.md                        # Instruções e diretrizes para agentes
+├── app.json                         # Configurações do projeto Expo
+├── App.tsx                           # Ponto de entrada com AuthProvider e AppNavigator
 ├── GEMINI.md                        # Instruções e diretrizes do Gemini
-├── index.ts                         # Ponto de entrada do Expo
-├── LICENSE                          # Licença do projeto
-├── metro.config.js                  # Configuração do Metro Bundler
-├── package.json                     # Dependências e scripts
-├── PROJECT_CONTEXT.md               # Documentação e contexto do projeto
-├── tsconfig.json                    # Configuração TypeScript
-├── assets/                          # Recursos estáticos (ícones, favicon, splash screen)
-├── openspec/                        # Arquivos de especificação, propostas e mudanças OpenSpec
+├── index.ts                          # Ponto de entrada do Expo
+├── LICENSE                           # Licença do projeto
+├── metro.config.js                   # Configuração do Metro Bundler
+├── package.json                      # Dependências e scripts do projeto
+├── PROJECT_CONTEXT.md                # Documentação e contexto do projeto
+├── tsconfig.json                     # Configuração do TypeScript
+├── assets/                            # Recursos estáticos (ícones, favicon e splash screen)
+├── openspec/                          # Especificações, propostas e alterações do OpenSpec
 └── src/
-    ├── components/                  # Componentes de interface modulares
+    ├── components/                    # Componentes reutilizáveis da interface
     │   └── ui/
-    │       ├── Button.tsx           # Botão reutilizável com variantes (primary, secondary, google, outline)
-    │       ├── Header.tsx           # Cabeçalho unificado com botão circular de voltar (40x40px, #E6F4EA, #047857) e título
-    │       ├── HeaderLogin.tsx      # Cabeçalho específico para telas de login/boas-vindas
-    │       ├── Input.tsx            # Campo de texto base com suporte a máscaras e erros
-    │       ├── InputGroup.tsx       # Grupo de input rotulado com suporte a máscaras (CPF, CNPJ, CEP, telefone)
-    │       ├── MainLayout.tsx       # Layout wrapper responsivo com visibilidade de navegação condicional (oculta em rotas não autenticadas)
-    │       ├── OptionCard.tsx       # Card de escolha (ex.: perfil Tutor vs ONG)
-    │       └── OrDivider.tsx        # Divisor visual com texto central ("ou")
-    ├── contexts/                    # Contextos globais da aplicação
-    │   └── AuthContext.tsx          # Gerenciamento global de autenticação, sessão com Firebase Auth & Firestore onSnapshot
-    ├── database/                    # Camada de persistência local (SQLite)
-    │   ├── AnimalDAO.ts             # Operações de CRUD para animais
-    │   ├── Database.ts              # Inicialização e conexão com o banco SQLite Expo
-    │   ├── FavoritosDAO.ts          # Gerenciamento de animais favoritos do usuário
-    │   ├── OngDAO.ts                # Operações de CRUD para ONGs
-    │   ├── SolicitacaoDAO.ts        # Gerenciamento de solicitações de adoção
-    │   └── UsuarioDAO.ts            # Operações de CRUD para usuários/tutores
+    │       ├── Button.tsx             # Botão reutilizável com diferentes variantes
+    │       ├── Header.tsx             # Cabeçalho unificado com botão de voltar e título
+    │       ├── HeaderLogin.tsx        # Cabeçalho específico para login e boas-vindas
+    │       ├── Input.tsx              # Campo de texto com suporte a máscaras e erros
+    │       ├── InputGroup.tsx         # Campo rotulado com máscaras (CPF, CNPJ, CEP e telefone)
+    │       ├── MainLayout.tsx         # Layout responsivo com navegação condicional
+    │       ├── OptionCard.tsx         # Cartão de seleção de perfil (Tutor ou ONG)
+    │       └── OrDivider.tsx           # Divisor visual com texto centralizado ("ou")
+    │
+    ├── contexts/                      # Contextos globais da aplicação
+    │   └── AuthContext.tsx            # Gerenciamento de autenticação e sessão com Firebase
+    │
+    ├── database/                      # Camada de persistência local com SQLite
+    │   ├── AnimalDAO.ts               # Operações CRUD de animais
+    │   ├── Database.ts               # Inicialização e conexão com o banco SQLite
+    │   ├── FavoritosDAO.ts            # Gerenciamento de animais favoritos
+    │   ├── OngDAO.ts                  # Operações CRUD de ONGs
+    │   ├── SolicitacaoDAO.ts          # Gerenciamento de solicitações de adoção
+    │   └── UsuarioDAO.ts              # Operações CRUD de usuários/tutores
+    │
     ├── models/
-    │   └── types.ts                 # Tipos globais de domínio (Usuario, Ong, Animal, Solicitacao, Favorito)
+    │   └── types.ts                   # Tipos globais (Usuario, Ong, Animal, Solicitacao e Favorito)
+    │
     ├── navigation/
-    │   └── AppNavigator.tsx         # Configuração do React Navigation (Native Stack) com checagem de sessão
-    ├── screens/
-    │   ├── HomeBase.tsx             # Componente base para listagens e dashboards da Home
-    │   ├── LoginScreen.tsx          # Tela de login por CPF/CNPJ/Email/Senha e Google OAuth
-    │   ├── PetDetailsScreen.tsx     # Tela de detalhes do pet com chips de características e nome dinâmico da ONG
-    │   ├── SettingsScreen.tsx       # Tela de configurações do usuário e logout seguro
-    │   ├── SolicitacoesBase.tsx     # Tela base para gestão de solicitações
-    │   ├── TelaCadastroOng.tsx      # Cadastro de ONGs com máscara de CNPJ/CEP e container responsivo
-    │   ├── TelaCadastroUsuario.tsx  # Cadastro de Tutores com máscara de CPF/CEP e container responsivo
-    │   ├── TelaEscolhaCadastro.tsx  # Tela de seleção de perfil para cadastro (Tutor x ONG)
-    │   ├── TelaHomeOngs.tsx         # Dashboard principal para ONGs cadastradas
-    │   ├── TelaHomeUsuario.tsx      # Dashboard principal para tutores/adotantes
-    │   ├── TelaSolicitacoesOngs.tsx # Visualização de solicitações recebidas pela ONG
-    │   └── TelaSolicitacoesUsuario.tsx # Visualização de solicitações enviadas pelo tutor
-    ├── services/
-    │   ├── auth.ts                  # Serviços de autenticação Firebase Auth, Firestore, SQLite, Google OAuth & Mini-Reg
-    │   └── firebase.ts              # Inicialização do Firebase App, Auth (persistência AsyncStorage) e Firestore
+    │   └── AppNavigator.tsx           # Navegação com React Navigation Native Stack e controle de sessão
+    │
+    ├── screens/                       # Telas da aplicação
+    │   ├── HomeBase.tsx               # Componente base para listagens e dashboards
+    │   ├── LoginScreen.tsx             # Login por CPF, CNPJ, e-mail, senha e Google OAuth
+    │   ├── PetDetailsScreen.tsx        # Detalhes do pet e informações da ONG
+    │   ├── SettingsScreen.tsx          # Configurações do usuário e logout
+    │   ├── SolicitacoesBase.tsx        # Componente base para gestão de solicitações
+    │   ├── TelaCadastroOng.tsx         # Cadastro de ONGs com máscaras de CNPJ e CEP
+    │   ├── TelaCadastroUsuario.tsx     # Cadastro de tutores com máscaras de CPF e CEP
+    │   ├── TelaEscolhaCadastro.tsx     # Seleção de perfil para cadastro (Tutor ou ONG)
+    │   ├── TelaHomeOngs.tsx            # Dashboard principal das ONGs
+    │   ├── TelaHomeUsuario.tsx         # Dashboard principal dos tutores/adotantes
+    │   ├── TelaSolicitacoesOngs.tsx    # Visualização de solicitações recebidas pelas ONGs
+    │   └── TelaSolicitacoesUsuario.tsx # Visualização de solicitações enviadas pelos tutores
+    │
+    ├── services/                      # Serviços e integrações externas
+    │   ├── auth.ts                    # Serviços de autenticação, Firebase, SQLite e Google OAuth
+    │   └── firebase.ts                # Inicialização do Firebase App, Auth e Firestore
+    │
     ├── types/
-    │     └── navigation.ts            # Tipagem de rotas e props de navegação (RootStackParamList)
+    │   └── navigation.ts              # Tipagem das rotas e propriedades de navegação
+    │
     └── utils/
-        └── masks.ts                 # Funções utilitárias de formatação e máscaras (CPF, CNPJ, Telefone, CEP)
+        └── masks.ts                   # Funções de formatação e máscaras (CPF, CNPJ, telefone e CEP)
+```
 
 ## 🛠️ Tecnologias
 
